@@ -65,44 +65,6 @@ function kenBurnsFilter(index, slideDuration) {
 }
 
 /**
- * Wrap long subtitle text to prevent overflow.
- * Returns ffmpeg-compatible multi-line text (literal \n, not actual newline).
- * @param {string} text
- * @param {number} maxChars
- * @returns {string}
- */
-function wrapText(text, maxChars = 55) {
-  const words = text.split(' ');
-  const lines = [];
-  let current = '';
-  for (const word of words) {
-    if ((current + ' ' + word).trim().length > maxChars) {
-      if (current) lines.push(current.trim());
-      current = word;
-    } else {
-      current = (current + ' ' + word).trim();
-    }
-  }
-  if (current) lines.push(current.trim());
-  // ffmpeg drawtext expects literal backslash-n for line breaks
-  return lines.join('\\n');
-}
-
-/**
- * Check if ffmpeg supports the drawtext filter (requires libfreetype).
- * @returns {Promise<boolean>}
- */
-function checkDrawtextSupport() {
-  return new Promise(resolve => {
-    const proc = spawn('ffmpeg', ['-filters'], { stdio: ['ignore', 'pipe', 'ignore'] });
-    let out = '';
-    proc.stdout.on('data', chunk => { out += chunk.toString(); });
-    proc.on('close', () => resolve(out.includes('drawtext')));
-    proc.on('error', () => resolve(false));
-  });
-}
-
-/**
  * Run ffmpeg with the given arguments, reporting progress via onProgress.
  * @param {string[]} args
  * @param {number} totalDuration - Total video duration in seconds (for % calc)
@@ -189,47 +151,19 @@ async function generateVideo({ photos, diaries, bgmPath, slideDuration, ffmpegFi
       );
     }
 
-    // Xfade chain
+    // Xfade chain — final label is [vfinal]
     if (photoCount === 1) {
-      filterParts[0] = filterParts[0].replace(/\[v0\]$/, '[vout]');
+      filterParts[0] = filterParts[0].replace(/\[v0\]$/, '[vfinal]');
     } else {
       let prevLabel = '[v0]';
       for (let i = 1; i < photoCount; i++) {
         const offset = (i * slideDuration - i * CROSSFADE_DURATION).toFixed(3);
-        const outLabel = i === photoCount - 1 ? '[vout]' : `[x${i}]`;
+        const outLabel = i === photoCount - 1 ? '[vfinal]' : `[x${i}]`;
         filterParts.push(
           `${prevLabel}[v${i}]xfade=transition=fade:duration=${CROSSFADE_DURATION}:offset=${offset}${outLabel}`
         );
         prevLabel = outLabel;
       }
-    }
-
-    // Subtitle drawtext filters (requires libfreetype — skip if not supported)
-    const supportsDrawtext = await checkDrawtextSupport();
-    if (supportsDrawtext) {
-      const drawTexts = processedPhotos.map((_, i) => {
-        const diary = diaries[i % diaries.length];
-        const snippet = wrapText(diary.text.split('.')[0] + '.', 55)
-          .replace(/'/g, '\u2019')   // straight apostrophe → curly (breaks drawtext quoting)
-          .replace(/:/g, '\\:')
-          .replace(/\[/g, '\\[')
-          .replace(/\]/g, '\\]');
-
-        const startTime = (i * (slideDuration - CROSSFADE_DURATION)).toFixed(3);
-        const endTime   = ((i + 1) * (slideDuration - CROSSFADE_DURATION) + CROSSFADE_DURATION).toFixed(3);
-
-        return (
-          `drawtext=text='${snippet}':` +
-          `font=Sans:fontsize=38:fontcolor=white:` +
-          `x=(w-text_w)/2:y=h-text_h-120:` +
-          `box=1:boxcolor=black@0.45:boxborderw=12:` +
-          `enable='between(t,${startTime},${endTime})'`
-        );
-      });
-      filterParts.push(`[vout]${drawTexts.join(',')}[vfinal]`);
-    } else {
-      // drawtext not available — output video without subtitles
-      filterParts.push(`[vout]copy[vfinal]`);
     }
 
     // BGM: volume + fade-out + trim to exact duration
