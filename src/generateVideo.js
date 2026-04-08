@@ -84,7 +84,8 @@ function wrapText(text, maxChars = 55) {
     }
   }
   if (current) lines.push(current.trim());
-  return lines.join('\n');
+  // ffmpeg drawtext expects literal backslash-n for line breaks, not the actual newline character
+  return lines.join('\\n');
 }
 
 /**
@@ -158,7 +159,7 @@ async function generateVideo({ photos, diaries, bgmPath, slideDuration, ffmpegFi
 
       return (
         `drawtext=text='${snippet}':` +
-        `fontsize=38:fontcolor=white:` +
+        `font=Sans:fontsize=38:fontcolor=white:` +
         `x=(w-text_w)/2:y=h-text_h-120:` +
         `box=1:boxcolor=black@0.45:boxborderw=12:` +
         `enable='between(t,${startTime},${endTime})'`
