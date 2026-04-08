@@ -1,0 +1,17 @@
+{
+  "name": "reels-generator",
+  "version": "1.0.0",
+  "description": "AI-Powered Memory Reels Generator for 언어의숲 (Eoneoeuisup)",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "fluent-ffmpeg": "^2.1.3",
+    "fs-extra": "^11.2.0",
+    "openai": "^4.47.1",
+    "sharp": "^0.33.4"
+  }
+}
