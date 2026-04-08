@@ -94,6 +94,13 @@ async function validateInputs() {
       `Found ${diaries.length} diaries. Minimum ${MIN_DIARIES} required.`
     );
   }
+  const badEntry = diaries.find(d => typeof d.text !== 'string' || !d.text.trim());
+  if (badEntry) {
+    throw new Error(
+      `diaries.json에 "text" 필드가 비어있는 항목이 있습니다: ${JSON.stringify(badEntry)}\n` +
+      `A diary entry is missing or has an empty "text" field.`
+    );
+  }
 
   // Check photos
   if (!(await fs.pathExists(PHOTOS_DIR))) {

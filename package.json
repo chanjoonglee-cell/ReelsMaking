@@ -5,7 +5,13 @@
   "main": "src/index.js",
   "type": "commonjs",
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "start:yes": "node src/index.js --yes",
+    "test:pipeline": "node scripts/test-pipeline.js",
+    "test:warm": "node scripts/test-pipeline.js --mood warm",
+    "test:calm": "node scripts/test-pipeline.js --mood calm",
+    "test:energetic": "node scripts/test-pipeline.js --mood energetic",
+    "test:melancholic": "node scripts/test-pipeline.js --mood melancholic"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
