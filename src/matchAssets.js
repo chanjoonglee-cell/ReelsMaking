@@ -1,6 +1,12 @@
 /**
  * Step 3: Asset Matching
  * Maps a mood to a BGM file path and ffmpeg filter parameters.
+ *
+ * All filters include:
+ *   - colorbalance: mood-specific toning (warm/cool/neutral)
+ *   - eq: brightness/contrast/saturation tuned for film look
+ *   - vignette: depth and focus
+ *   - noise: film grain (temporal, changes per frame)
  */
 
 const path = require('path');
@@ -10,52 +16,59 @@ const path = require('path');
  *
  * slideDuration: seconds each photo is displayed (before crossfade overlap).
  * targetPhotoCount: number of best shots to select so total video ≈ 25–35s.
- *   Formula: total = n * slideDuration - (n-1) * 0.8 (crossfade)
- *   warm/calm  (3s): n=14 → 14*3 - 13*0.8 = 31.6s
- *   energetic  (2s): n=20 → 20*2 - 19*0.8 = 24.8s
- *   melancholic(4s): n=10 → 10*4 -  9*0.8 = 32.8s
- * ffmpegFilter: vf filter string applied to each photo.
+ *   crossfade is now 1.0s:
+ *   warm/calm  (3.5s): n=12 → 12*3.5 - 11*1.0 = 31.0s
+ *   energetic  (2.5s): n=16 → 16*2.5 - 15*1.0 = 25.0s
+ *   melancholic(4.5s): n=9  →  9*4.5 -  8*1.0 = 32.5s
  */
 const MOOD_ASSETS = {
   warm: {
     bgmFile: 'warm.mp3',
-    slideDuration: 3,
-    targetPhotoCount: 14,
-    // Warm yellow tones, soft vignette
+    slideDuration: 3.5,
+    targetPhotoCount: 12,
+    // Kodak film: warm highlights, lifted shadows, reduced saturation, grain
     ffmpegFilter:
-      'colorbalance=rs=0.1:gs=0.05:bs=-0.05,' +
-      'curves=r=\'0/0 0.5/0.6 1/1\':g=\'0/0 0.5/0.55 1/1\',' +
-      'vignette=PI/6',
-    description: 'warm yellow tones, soft vignette',
+      'colorbalance=rs=0.18:gs=0.04:bs=-0.18:rm=0.08:gm=0.01:bm=-0.10:rh=0.04:gh=0:bh=-0.12,' +
+      'eq=brightness=0.03:contrast=1.06:saturation=0.78:gamma=1.08,' +
+      'vignette=PI/3.0:eval=init,' +
+      'noise=alls=12:allf=t',
+    description: 'Kodak film — warm, faded, grainy',
   },
   calm: {
     bgmFile: 'calm.mp3',
-    slideDuration: 3,
-    targetPhotoCount: 14,
-    // Cool blue-green tones
+    slideDuration: 3.5,
+    targetPhotoCount: 12,
+    // Fuji film: slight blue-green tint, airy, soft grain
     ffmpegFilter:
-      'colorbalance=rs=-0.05:gs=0.05:bs=0.1,' +
-      'curves=b=\'0/0 0.5/0.6 1/1\'',
-    description: 'cool blue-green tones',
+      'colorbalance=rs=-0.06:gs=0.04:bs=0.10:rm=-0.04:gm=0.02:bm=0.07,' +
+      'eq=brightness=0.02:contrast=1.03:saturation=0.80:gamma=1.06,' +
+      'vignette=PI/3.8:eval=init,' +
+      'noise=alls=9:allf=t',
+    description: 'Fuji film — cool, airy, soft grain',
   },
   energetic: {
     bgmFile: 'energetic.mp3',
-    slideDuration: 2,
-    targetPhotoCount: 20,
-    // High contrast, saturated
+    slideDuration: 2.5,
+    targetPhotoCount: 16,
+    // Vivid film: punchy contrast, warm tones, sharp grain
     ffmpegFilter:
-      'eq=contrast=1.3:saturation=1.5:brightness=0.05',
-    description: 'high contrast, saturated',
+      'colorbalance=rs=0.10:gs=0:bs=-0.08,' +
+      'eq=brightness=0.04:contrast=1.18:saturation=1.08,' +
+      'vignette=PI/4.5:eval=init,' +
+      'noise=alls=8:allf=t',
+    description: 'Vivid film — punchy, warm, sharp grain',
   },
   melancholic: {
     bgmFile: 'melancholic.mp3',
-    slideDuration: 4,
-    targetPhotoCount: 10,
-    // Desaturated, heavy vignette
+    slideDuration: 4.5,
+    targetPhotoCount: 9,
+    // Faded old photo: desaturated, cool shadows, heavy vignette, strong grain
     ffmpegFilter:
-      'eq=saturation=0.4:contrast=0.9,' +
-      'vignette=PI/4',
-    description: 'desaturated, heavy vignette',
+      'colorbalance=rs=-0.04:gs=-0.02:bs=0.06:rm=-0.02:gm=-0.01:bm=0.04,' +
+      'eq=brightness=-0.02:contrast=0.90:saturation=0.38:gamma=0.94,' +
+      'vignette=PI/2.2:eval=init,' +
+      'noise=alls=16:allf=t',
+    description: 'Faded old photo — desaturated, heavy vignette, grainy',
   },
 };
 

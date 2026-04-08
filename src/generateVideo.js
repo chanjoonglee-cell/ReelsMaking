@@ -2,10 +2,11 @@
  * Step 4: Video Generation
  * Uses ffmpeg (via child_process.spawn) to compose a ~30s Instagram Reels video:
  * - 1080×1920 (9:16 vertical)
- * - Ken Burns pan/zoom effect per photo
- * - Crossfade transitions (0.8s)
+ * - Landscape photos displayed at natural ratio on blurred background (polaroid style)
+ * - Ken Burns pan/zoom effect per photo (6 cinematic patterns)
+ * - Dissolve/fade transitions (1.0s)
+ * - Film grain + color grading applied via ffmpegFilter
  * - BGM at 0.8 volume with 3s fade-out
- * - Subtitle overlay (diary text snippets, bottom center)
  * - H.264 MP4 output
  */
 
@@ -18,48 +19,119 @@ const os = require('os');
 const OUTPUT_WIDTH = 1080;
 const OUTPUT_HEIGHT = 1920;
 const FPS = 30;
-const CROSSFADE_DURATION = 0.8;
+const CROSSFADE_DURATION = 1.0;   // slightly longer for moodier feel
 const BGM_VOLUME = 0.8;
 const BGM_FADEOUT_SEC = 3;
 
+// Xfade transitions — alternated for a dynamic "photo album" feel
+const TRANSITIONS = ['dissolve', 'fade', 'dissolve', 'slideup', 'dissolve', 'fade'];
+
 /**
- * Pre-process a photo: resize/crop to 1080×1920 and save to a temp dir.
- * @param {string} src
- * @param {string} tmpDir
- * @param {number} index
- * @returns {Promise<string>} path to processed image
+ * Pre-process a photo:
+ * - Landscape: blurred/darkened background + photo centered with cream polaroid border
+ * - Portrait: resize/crop to fill 1080×1920
+ * Saves result to tmpDir.
  */
 async function preparePhoto(src, tmpDir, index) {
   const dest = path.join(tmpDir, `photo_${String(index).padStart(3, '0')}.jpg`);
-  await sharp(src)
-    .resize(OUTPUT_WIDTH, OUTPUT_HEIGHT, {
-      fit: 'cover',
-      position: 'centre',
+
+  // Get oriented dimensions (respect EXIF rotation)
+  const rawMeta = await sharp(src).metadata();
+  const rotated = rawMeta.orientation >= 5 && rawMeta.orientation <= 8;
+  const orientedW = rotated ? rawMeta.height : (rawMeta.width ?? OUTPUT_WIDTH);
+  const orientedH = rotated ? rawMeta.width : (rawMeta.height ?? OUTPUT_HEIGHT);
+  const isLandscape = orientedW > orientedH;
+
+  if (isLandscape) {
+    // ── LANDSCAPE LAYOUT ──────────────────────────────────────────────────────
+    // Polaroid border sizes
+    const BLR = 30;   // left + right border
+    const BT  = 26;   // top border
+    const BB  = 82;   // bottom border (polaroid has bigger bottom)
+
+    // Scale photo to fill the horizontal span inside borders
+    const photoW = OUTPUT_WIDTH - BLR * 2;
+    const photoH = Math.round(photoW * orientedH / orientedW);
+
+    // Full polaroid frame dimensions (same width as canvas, variable height)
+    const frameH = Math.min(photoH + BT + BB, OUTPUT_HEIGHT);
+
+    // 1. Scale the landscape photo (sharp auto-applies EXIF rotation)
+    const photoBuffer = await sharp(src)
+      .rotate()  // apply EXIF rotation
+      .resize(photoW, photoH, { fit: 'fill' })
+      .jpeg({ quality: 90 })
+      .toBuffer();
+
+    // 2. Cream-white polaroid frame
+    const polaroidBuf = await sharp({
+      create: { width: OUTPUT_WIDTH, height: frameH, channels: 3, background: { r: 248, g: 244, b: 236 } },
     })
-    .jpeg({ quality: 90 })
-    .toFile(dest);
+      .composite([{ input: photoBuffer, top: BT, left: BLR }])
+      .jpeg({ quality: 90 })
+      .toBuffer();
+
+    // 3. Blurred + darkened background (full canvas)
+    const bgBuffer = await sharp(src)
+      .rotate()
+      .resize(OUTPUT_WIDTH, OUTPUT_HEIGHT, { fit: 'cover', position: 'centre' })
+      .blur(32)
+      .modulate({ brightness: 0.28, saturation: 0.5 })
+      .jpeg({ quality: 75 })
+      .toBuffer();
+
+    // 4. Composite: polaroid centered on background
+    const topOffset = Math.max(0, Math.round((OUTPUT_HEIGHT - frameH) / 2));
+    await sharp(bgBuffer)
+      .composite([{ input: polaroidBuf, top: topOffset, left: 0 }])
+      .jpeg({ quality: 90 })
+      .toFile(dest);
+  } else {
+    // ── PORTRAIT LAYOUT ───────────────────────────────────────────────────────
+    // Full-bleed crop (sharp auto-applies EXIF rotation via .rotate())
+    await sharp(src)
+      .rotate()
+      .resize(OUTPUT_WIDTH, OUTPUT_HEIGHT, { fit: 'cover', position: 'centre' })
+      .jpeg({ quality: 90 })
+      .toFile(dest);
+  }
+
   return dest;
 }
 
 /**
- * Build a Ken Burns zoom/pan filter for a single photo.
- * Alternates between three pan directions to add visual variety.
+ * Build a cinematic Ken Burns zoom/pan filter for a single photo.
+ * 6 patterns: 3 zoom-pan and 3 slow pan-only for variety.
  * @param {number} index
  * @param {number} slideDuration
  * @returns {string} zoompan filter string
  */
 function kenBurnsFilter(index, slideDuration) {
   const frames = Math.round(slideDuration * FPS);
-  const zoomTarget = 1.08; // 8% zoom
-  const zoomStep = (zoomTarget - 1) / frames;
+  const W = OUTPUT_WIDTH;
+  const H = OUTPUT_HEIGHT;
+
+  // Zoom patterns (start at 1.0 → target)
+  const zTarget = 1.10;
+  const zStep = ((zTarget - 1) / frames).toFixed(6);
+
+  // Slow pan patterns (very slight zoom just to allow panning)
+  const pTarget = 1.04;
+  const pStep = ((pTarget - 1) / frames).toFixed(6);
 
   const patterns = [
-    // Zoom in, pan slightly right
-    `zoompan=z='min(zoom+${zoomStep.toFixed(6)},${zoomTarget})':x='iw/2-(iw/zoom/2)+${0.02}*(on/${frames})*(iw/2)':y='ih/2-(ih/zoom/2)':d=${frames}:s=${OUTPUT_WIDTH}x${OUTPUT_HEIGHT}:fps=${FPS}`,
-    // Zoom in, pan slightly up
-    `zoompan=z='min(zoom+${zoomStep.toFixed(6)},${zoomTarget})':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)-${0.02}*(on/${frames})*(ih/2)':d=${frames}:s=${OUTPUT_WIDTH}x${OUTPUT_HEIGHT}:fps=${FPS}`,
-    // Zoom in, pan slightly left+down
-    `zoompan=z='min(zoom+${zoomStep.toFixed(6)},${zoomTarget})':x='iw/2-(iw/zoom/2)-${0.02}*(on/${frames})*(iw/2)':y='ih/2-(ih/zoom/2)+${0.02}*(on/${frames})*(ih/2)':d=${frames}:s=${OUTPUT_WIDTH}x${OUTPUT_HEIGHT}:fps=${FPS}`,
+    // 0: Zoom in + pan right
+    `zoompan=z='min(zoom+${zStep},${zTarget})':x='iw/2-(iw/zoom/2)+0.015*(on/${frames})*(iw/2)':y='ih/2-(ih/zoom/2)':d=${frames}:s=${W}x${H}:fps=${FPS}`,
+    // 1: Zoom in + pan up
+    `zoompan=z='min(zoom+${zStep},${zTarget})':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)-0.015*(on/${frames})*(ih/2)':d=${frames}:s=${W}x${H}:fps=${FPS}`,
+    // 2: Zoom in + pan left+down
+    `zoompan=z='min(zoom+${zStep},${zTarget})':x='iw/2-(iw/zoom/2)-0.015*(on/${frames})*(iw/2)':y='ih/2-(ih/zoom/2)+0.015*(on/${frames})*(ih/2)':d=${frames}:s=${W}x${H}:fps=${FPS}`,
+    // 3: Slow pan left (cinematic parallax)
+    `zoompan=z='min(zoom+${pStep},${pTarget})':x='(iw-iw/zoom)*(1-on/${frames})':y='ih/2-(ih/zoom/2)':d=${frames}:s=${W}x${H}:fps=${FPS}`,
+    // 4: Slow pan right
+    `zoompan=z='min(zoom+${pStep},${pTarget})':x='(iw-iw/zoom)*(on/${frames})':y='ih/2-(ih/zoom/2)':d=${frames}:s=${W}x${H}:fps=${FPS}`,
+    // 5: Zoom in centered (pure zoom, no pan — works well on faces)
+    `zoompan=z='min(zoom+${zStep},${zTarget})':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${frames}:s=${W}x${H}:fps=${FPS}`,
   ];
   return patterns[index % patterns.length];
 }
@@ -101,7 +173,7 @@ function runFfmpeg(args, totalDuration, onProgress) {
         onProgress?.(100);
         resolve();
       } else {
-        reject(new Error(`ffmpeg exited with code ${code}.\nLast output:\n${stderrBuf}`));
+        reject(new Error(`ffmpeg exited with code ${code}. Last output: ${stderrBuf}`));
       }
     });
 
@@ -132,7 +204,7 @@ async function generateVideo({ photos, diaries, bgmPath, slideDuration, ffmpegFi
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'reels-'));
 
   try {
-    // 1. Pre-process all photos to target resolution
+    // 1. Pre-process all photos
     const processedPhotos = await Promise.all(
       photos.map((p, i) => preparePhoto(p, tmpDir, i))
     );
@@ -144,23 +216,24 @@ async function generateVideo({ photos, diaries, bgmPath, slideDuration, ffmpegFi
     // 2. Build filter_complex
     const filterParts = [];
 
-    // Per-photo: Ken Burns + color filter
+    // Per-photo: Ken Burns + color + grain filter
     for (let i = 0; i < photoCount; i++) {
       filterParts.push(
         `[${i}:v]${kenBurnsFilter(i, slideDuration)},${ffmpegFilter},setsar=1[v${i}]`
       );
     }
 
-    // Xfade chain — final label is [vfinal]
+    // Xfade chain with varied transitions — final label is [vfinal]
     if (photoCount === 1) {
       filterParts[0] = filterParts[0].replace(/\[v0\]$/, '[vfinal]');
     } else {
       let prevLabel = '[v0]';
       for (let i = 1; i < photoCount; i++) {
         const offset = (i * slideDuration - i * CROSSFADE_DURATION).toFixed(3);
+        const transition = TRANSITIONS[i % TRANSITIONS.length];
         const outLabel = i === photoCount - 1 ? '[vfinal]' : `[x${i}]`;
         filterParts.push(
-          `${prevLabel}[v${i}]xfade=transition=fade:duration=${CROSSFADE_DURATION}:offset=${offset}${outLabel}`
+          `${prevLabel}[v${i}]xfade=transition=${transition}:duration=${CROSSFADE_DURATION}:offset=${offset}${outLabel}`
         );
         prevLabel = outLabel;
       }
@@ -202,7 +275,7 @@ async function generateVideo({ photos, diaries, bgmPath, slideDuration, ffmpegFi
       '-movflags', '+faststart',
       '-pix_fmt', 'yuv420p',
       '-r', String(FPS),
-      '-y',         // overwrite output without prompt
+      '-y',
       outputPath,
     );
 
