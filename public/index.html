@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>언어의숲 릴스 생성기</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #faf5ff 0%, #f0f9ff 100%);
+      min-height: 100vh;
+      color: #111827;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+      color: white;
+      padding: 1.75rem 2rem;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(124,58,237,.35);
+    }
+    header h1 { font-size: 1.75rem; font-weight: 800; letter-spacing: -.5px; }
+    header h1 span { font-weight: 400; opacity: .8; font-size: 1.5rem; }
+    header p { margin-top: .4rem; opacity: .85; font-size: .9rem; }
+
+    /* ── Layout ── */
+    main { max-width: 920px; margin: 2rem auto; padding: 0 1rem 4rem; }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+    @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 1.4rem;
+      box-shadow: 0 2px 14px rgba(0,0,0,.07);
+    }
+    .card-title {
+      font-size: .95rem;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: .25rem;
+    }
+    .card-sub {
+      font-size: .78rem;
+      color: #9ca3af;
+      margin-bottom: 1rem;
+    }
+
+    /* ── Photo drop zone ── */
+    .photo-drop {
+      border: 2px dashed #c4b5fd;
+      border-radius: 12px;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .75rem;
+      cursor: pointer;
+      background: #faf5ff;
+      transition: all .2s;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .photo-drop:hover, .photo-drop.over {
+      border-color: #7c3aed;
+      background: #ede9fe;
+    }
+    .photo-drop.has-photos {
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding: .75rem;
+    }
+    .drop-icon { font-size: 2.5rem; line-height: 1; }
+    .drop-text { font-size: .85rem; color: #6b7280; }
+    .pick-btn {
+      background: #7c3aed;
+      color: #fff;
+      border: none;
+      padding: .45rem 1.1rem;
+      border-radius: 8px;
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .pick-btn:hover { background: #6d28d9; }
+
+    /* photo thumbnails */
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+      gap: 3px;
+      width: 100%;
+    }
+    .photo-grid img {
+      aspect-ratio: 9/16;
+      object-fit: cover;
+      border-radius: 5px;
+      display: block;
+      width: 100%;
+    }
+
+    /* badge */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      padding: .28rem .7rem;
+      border-radius: 99px;
+      font-size: .78rem;
+      font-weight: 600;
+      margin-top: .75rem;
+    }
+    .badge.ok  { background: #d1fae5; color: #065f46; }
+    .badge.warn { background: #fef3c7; color: #92400e; }
+
+    /* ── Diary ── */
+    textarea {
+      width: 100%;
+      min-height: 210px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: .8rem;
+      font-size: .88rem;
+      font-family: inherit;
+      resize: vertical;
+      color: #374151;
+      line-height: 1.65;
+      outline: none;
+      transition: border-color .2s;
+    }
+    textarea:focus { border-color: #7c3aed; }
+    textarea::placeholder { color: #d1d5db; }
+
+    .diary-hint { margin-top: .45rem; font-size: .76rem; color: #9ca3af; }
+    .diary-hint strong { color: #7c3aed; }
+
+    /* ── Requirements ── */
+    .reqs { display: flex; gap: .75rem; margin-top: 1.25rem; flex-wrap: wrap; }
+    .req {
+      flex: 1; min-width: 130px;
+      background: #fff;
+      border-radius: 10px;
+      padding: .65rem 1rem;
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+      font-size: .83rem;
+      transition: box-shadow .2s;
+    }
+    .req-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      background: #d1d5db;
+      flex-shrink: 0;
+      transition: background .3s;
+    }
+    .req.ok .req-dot { background: #059669; }
+    .req-label { color: #374151; font-weight: 500; }
+    .req-val { margin-left: auto; color: #9ca3af; font-weight: 600; }
+    .req.ok .req-val { color: #059669; }
+
+    /* ── Generate button ── */
+    .gen-btn {
+      display: block;
+      width: 100%;
+      margin-top: 1.1rem;
+      padding: .95rem;
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+      box-shadow: 0 4px 16px rgba(124,58,237,.4);
+    }
+    .gen-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(124,58,237,.5); }
+    .gen-btn:disabled { background: #e5e7eb; color: #9ca3af; box-shadow: none; cursor: not-allowed; }
+
+    /* ── Error banner ── */
+    .err {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      padding: .85rem 1rem;
+      color: #991b1b;
+      font-size: .85rem;
+      margin-top: .9rem;
+      display: none;
+    }
+
+    /* ── Progress section ── */
+    #progressSection { display: none; }
+    #progressSection.show { display: block; animation: fadeUp .4s ease; }
+
+    @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+    .prog-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 1.75rem;
+      box-shadow: 0 2px 14px rgba(0,0,0,.07);
+    }
+    .prog-card h2 { font-size: 1rem; font-weight: 700; color: #374151; margin-bottom: 1.25rem; }
+
+    .steps { display: flex; flex-direction: column; gap: .85rem; }
+    .step { display: flex; align-items: flex-start; gap: .85rem; opacity: .3; transition: opacity .3s; }
+    .step.active, .step.done { opacity: 1; }
+
+    .step-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: #f3f4f6;
+      border: 2px solid #e5e7eb;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .78rem; font-weight: 700; color: #9ca3af;
+      flex-shrink: 0; transition: all .3s;
+    }
+    .step.active .step-num { background: #ede9fe; border-color: #7c3aed; color: #7c3aed; animation: spin 1.5s linear infinite; }
+    .step.done  .step-num { background: #d1fae5; border-color: #059669; color: #059669; }
+
+    @keyframes spin { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+
+    .step-body { flex: 1; padding-top: 3px; }
+    .step-title { font-size: .87rem; font-weight: 600; color: #374151; }
+    .step-detail { font-size: .77rem; color: #9ca3af; margin-top: .15rem; min-height: 1.1em; }
+
+    .pbar-wrap { margin-top: .5rem; background: #f3f4f6; border-radius: 99px; height: 6px; overflow: hidden; display: none; }
+    .pbar-fill { height: 100%; background: linear-gradient(90deg,#7c3aed,#a855f7); border-radius:99px; transition: width .35s ease; width: 0%; }
+
+    /* ── Done section ── */
+    #doneSection { display: none; }
+    #doneSection.show { display: block; animation: fadeUp .4s ease; }
+
+    .done-card {
+      background: linear-gradient(135deg,#d1fae5,#ecfdf5);
+      border: 1px solid #a7f3d0;
+      border-radius: 16px;
+      padding: 2.25rem 1.5rem;
+      text-align: center;
+    }
+    .done-icon { font-size: 3.5rem; margin-bottom: .75rem; }
+    .done-card h2 { font-size: 1.6rem; font-weight: 800; color: #065f46; margin-bottom: .4rem; }
+    .done-meta { font-size: .88rem; color: #059669; margin-bottom: 1.5rem; }
+
+    .dl-btn {
+      display: inline-block;
+      padding: .8rem 1.8rem;
+      background: #059669;
+      color: #fff;
+      border: none;
+      border-radius: 11px;
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all .2s;
+      box-shadow: 0 4px 14px rgba(5,150,105,.4);
+      margin-right: .65rem;
+    }
+    .dl-btn:hover { background: #047857; transform: translateY(-1px); }
+
+    .again-btn {
+      padding: .8rem 1.4rem;
+      background: #fff;
+      color: #374151;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 11px;
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .again-btn:hover { border-color: #7c3aed; color: #7c3aed; }
+
+    /* ── Global error ── */
+    #globalErr {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 12px;
+      padding: 1.25rem;
+      color: #991b1b;
+      font-size: .88rem;
+      display: none;
+    }
+    #globalErr code { display: block; margin: .5rem 0; font-size: .8rem; word-break: break-all; }
+
+    #fileInput { display: none; }
+
+    footer { text-align: center; padding: 2rem; color: #9ca3af; font-size: .77rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🌿 언어의숲 &nbsp;<span>Reels Generator</span></h1>
+  <p>사진 + 일기를 드래그하면 AI가 30초 감성 릴스 영상을 자동 생성합니다</p>
+</header>
+
+<main>
+
+  <!-- ── Upload Section ── -->
+  <section id="uploadSection">
+    <div class="grid">
+
+      <!-- Photo zone -->
+      <div class="card">
+        <div class="card-title">📸 사진</div>
+        <div class="card-sub">JPG · PNG · WEBP &nbsp;|&nbsp; 최소 20장 &nbsp;|&nbsp; 드래그하거나 클릭</div>
+
+        <div class="photo-drop" id="photoDrop">
+          <div id="dropPrompt">
+            <div class="drop-icon">🖼️</div>
+            <div class="drop-text">사진을 여기에 드래그하세요</div>
+            <button class="pick-btn" onclick="fileInput.click(); event.stopPropagation()">파일 선택</button>
+          </div>
+          <div class="photo-grid" id="photoGrid" style="display:none"></div>
+        </div>
+
+        <span class="badge warn" id="photoBadge" style="display:none">📷 0장</span>
+        <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp">
+      </div>
+
+      <!-- Diary zone -->
+      <div class="card">
+        <div class="card-title">📝 일기 텍스트</div>
+        <div class="card-sub">각 일기를 빈 줄로 구분 &nbsp;|&nbsp; 최소 7개 항목</div>
+
+        <textarea id="diaryText" placeholder="Today I went to the Han River with my friends. It was so peaceful and beautiful.
+
+I studied English for 2 hours today. I feel so proud of myself for staying consistent.
+
+Had a lovely brunch with my sister. We talked about dreams and the future.
+
+Went for a morning jog in the park. The fresh air made me feel alive.
+
+Cooked a new recipe today — lemon pasta. It turned out delicious!
+
+Finished a great book this evening. I learned so many new English words.
+
+Spent the afternoon at a cozy cafe, journaling and drinking matcha latte.
+
+(빈 줄로 일기를 구분해주세요 | Separate each diary entry with a blank line)"></textarea>
+
+        <div class="diary-hint">
+          <strong id="entryCount">0</strong>개 항목 감지됨 &nbsp;·&nbsp; 최소 7개 필요
+        </div>
+      </div>
+    </div>
+
+    <!-- Requirements -->
+    <div class="reqs">
+      <div class="req" id="reqPhotos">
+        <div class="req-dot"></div>
+        <span class="req-label">사진</span>
+        <span class="req-val" id="reqPhotosVal">0 / 20장</span>
+      </div>
+      <div class="req" id="reqDiary">
+        <div class="req-dot"></div>
+        <span class="req-label">일기</span>
+        <span class="req-val" id="reqDiaryVal">0 / 7개</span>
+      </div>
+    </div>
+
+    <div class="err" id="uploadErr"></div>
+
+    <button class="gen-btn" id="genBtn" disabled onclick="startGenerate()">
+      릴스 생성하기 ✨
+    </button>
+  </section>
+
+  <!-- ── Progress Section ── -->
+  <section id="progressSection">
+    <div class="prog-card">
+      <h2>⚙️ AI가 영상을 만들고 있습니다... &nbsp;<small style="font-weight:400;color:#9ca3af;font-size:.82rem">약 3~5분 소요</small></h2>
+      <div class="steps">
+
+        <div class="step" id="step1">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">무드 분석 &nbsp;|&nbsp; Mood Analysis</div>
+            <div class="step-detail" id="d1">GPT-4o로 일기 전체 분석 중...</div>
+          </div>
+        </div>
+
+        <div class="step" id="step2">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">에셋 매칭 &nbsp;|&nbsp; Asset Matching</div>
+            <div class="step-detail" id="d2">BGM & 색감 필터 결정</div>
+          </div>
+        </div>
+
+        <div class="step" id="step3">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">베스트컷 선정 &nbsp;|&nbsp; Photo Scoring</div>
+            <div class="step-detail" id="d3">GPT-4o Vision으로 사진 채점 중...</div>
+          </div>
+        </div>
+
+        <div class="step" id="step4">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">영상 합성 &nbsp;|&nbsp; Video Generation</div>
+            <div class="step-detail" id="d4">ffmpeg으로 영상 생성 중...</div>
+            <div class="pbar-wrap" id="pbarWrap">
+              <div class="pbar-fill" id="pbarFill"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Done Section ── -->
+  <section id="doneSection">
+    <div class="done-card">
+      <div class="done-icon">🎬</div>
+      <h2>완성! &nbsp;|&nbsp; Done!</h2>
+      <div class="done-meta" id="doneMeta"></div>
+      <a class="dl-btn" id="dlBtn" href="#" download>⬇️ 영상 다운로드</a>
+      <button class="again-btn" onclick="reset()">다시 만들기</button>
+    </div>
+  </section>
+
+  <!-- Global error -->
+  <div id="globalErr">
+    <strong>⚠️ 오류가 발생했습니다 | An error occurred</strong>
+    <code id="globalErrMsg"></code>
+    <button class="again-btn" style="margin-top:.75rem" onclick="reset()">다시 시도</button>
+  </div>
+
+</main>
+
+<footer>
+  언어의숲 (Eoneoeuisup) &nbsp;·&nbsp; AI Memory Reels Generator MVP v1.0
+</footer>
+
+<script>
+// ── State ───────────────────────────────────────────────────────────────────
+let files = [];   // selected File objects
+let es = null;    // EventSource
+
+// ── Photo drag & drop ────────────────────────────────────────────────────────
+const photoDrop = document.getElementById('photoDrop');
+const fileInput = document.getElementById('fileInput');
+
+photoDrop.addEventListener('click', () => fileInput.click());
+photoDrop.addEventListener('dragover',  e => { e.preventDefault(); photoDrop.classList.add('over'); });
+photoDrop.addEventListener('dragleave', ()  => photoDrop.classList.remove('over'));
+photoDrop.addEventListener('drop', e => {
+  e.preventDefault();
+  photoDrop.classList.remove('over');
+  addFiles([...e.dataTransfer.files]);
+});
+fileInput.addEventListener('change', () => {
+  addFiles([...fileInput.files]);
+  fileInput.value = '';
+});
+
+function addFiles(incoming) {
+  const imgs = incoming.filter(f => /\.(jpe?g|png|webp)$/i.test(f.name));
+  if (!imgs.length) return;
+  const seen = new Set(files.map(f => f.name));
+  for (const f of imgs) { if (!seen.has(f.name)) { files.push(f); seen.add(f.name); } }
+  renderPhotos();
+  updateReqs();
+}
+
+function renderPhotos() {
+  const grid  = document.getElementById('photoGrid');
+  const prompt = document.getElementById('dropPrompt');
+  const badge  = document.getElementById('photoBadge');
+
+  if (!files.length) {
+    grid.style.display  = 'none';
+    prompt.style.display = '';
+    badge.style.display  = 'none';
+    photoDrop.classList.remove('has-photos');
+    return;
+  }
+
+  prompt.style.display = 'none';
+  photoDrop.classList.add('has-photos');
+  grid.style.display   = 'grid';
+  grid.innerHTML = '';
+
+  for (const f of files.slice(0, 60)) {
+    const img = document.createElement('img');
+    img.src   = URL.createObjectURL(f);
+    img.title = f.name;
+    grid.appendChild(img);
+  }
+
+  const n = files.length;
+  badge.textContent = `📷 ${n}장 선택됨`;
+  badge.className   = `badge ${n >= 20 ? 'ok' : 'warn'}`;
+  badge.style.display = '';
+}
+
+// ── Diary parsing ────────────────────────────────────────────────────────────
+const diaryTA = document.getElementById('diaryText');
+diaryTA.addEventListener('input', () => { updateEntryCount(); updateReqs(); });
+
+function parseEntries(text) {
+  return text.split(/\n\s*\n/).map(p => p.trim()).filter(p => p.length >= 15);
+}
+
+function updateEntryCount() {
+  const n = parseEntries(diaryTA.value).length;
+  document.getElementById('entryCount').textContent = n;
+  return n;
+}
+
+// ── Requirements ─────────────────────────────────────────────────────────────
+function updateReqs() {
+  const photoOk = files.length >= 20;
+  const entryOk = parseEntries(diaryTA.value).length >= 7;
+
+  const rp = document.getElementById('reqPhotos');
+  const rd = document.getElementById('reqDiary');
+  rp.className = `req${photoOk ? ' ok' : ''}`;
+  rd.className = `req${entryOk ? ' ok' : ''}`;
+  document.getElementById('reqPhotosVal').textContent = `${files.length} / 20장`;
+  document.getElementById('reqDiaryVal').textContent  = `${parseEntries(diaryTA.value).length} / 7개`;
+
+  document.getElementById('genBtn').disabled = !(photoOk && entryOk);
+}
+
+// ── Generate ──────────────────────────────────────────────────────────────────
+async function startGenerate() {
+  hide('uploadErr');
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  btn.textContent = '업로드 중... ⏳';
+
+  const fd = new FormData();
+  for (const f of files) fd.append('photos', f);
+  fd.append('diaryText', diaryTA.value);
+
+  try {
+    const res  = await fetch('/api/generate', { method: 'POST', body: fd });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showUploadErr(data.error || '업로드 실패');
+      btn.disabled = false;
+      btn.textContent = '릴스 생성하기 ✨';
+      return;
+    }
+
+    showProcessing();
+    connectSSE(data.jobId);
+
+  } catch (e) {
+    showUploadErr('서버 연결 실패: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '릴스 생성하기 ✨';
+  }
+}
+
+// ── SSE ───────────────────────────────────────────────────────────────────────
+function connectSSE(jobId) {
+  if (es) es.close();
+  es = new EventSource(`/api/progress/${jobId}`);
+  es.onmessage = e => handleEvent(JSON.parse(e.data));
+  es.onerror   = () => {};   // closed after done/error — expected
+}
+
+function handleEvent(d) {
+  if (d.type === 'step') {
+    const el  = document.getElementById(`step${d.step}`);
+    const det = document.getElementById(`d${d.step}`);
+    if (d.status === 'running') {
+      el.className = 'step active';
+      el.querySelector('.step-num').textContent = '↻';
+    } else if (d.status === 'done') {
+      el.className = 'step done';
+      el.querySelector('.step-num').textContent = '✓';
+      det.textContent = d.label;
+    }
+  }
+
+  if (d.type === 'progress') {
+    const wrap = document.getElementById('pbarWrap');
+    const fill = document.getElementById('pbarFill');
+    wrap.style.display = 'block';
+    fill.style.width   = d.pct + '%';
+    document.getElementById('d4').textContent = `합성 중... ${d.pct}%`;
+  }
+
+  if (d.type === 'done')  { if (es) es.close(); showDone(d); }
+  if (d.type === 'error') { if (es) es.close(); showGlobalErr(d.message); }
+}
+
+// ── UI transitions ────────────────────────────────────────────────────────────
+function showProcessing() {
+  document.getElementById('uploadSection').style.display = 'none';
+  document.getElementById('progressSection').classList.add('show');
+  setStep(1, 'active');
+}
+
+function showDone(d) {
+  document.getElementById('progressSection').classList.remove('show');
+  document.getElementById('doneSection').classList.add('show');
+  document.getElementById('doneMeta').textContent =
+    `영상 길이 ~${d.duration}초  ·  파일 크기 ${d.fileSizeMB} MB`;
+  const btn = document.getElementById('dlBtn');
+  btn.href     = d.downloadUrl;
+  btn.download = `reels_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.mp4`;
+}
+
+function showUploadErr(msg) {
+  const el = document.getElementById('uploadErr');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+}
+
+function showGlobalErr(msg) {
+  document.getElementById('progressSection').classList.remove('show');
+  document.getElementById('globalErrMsg').textContent = msg;
+  document.getElementById('globalErr').style.display = 'block';
+}
+
+function setStep(n, cls) {
+  const el  = document.getElementById(`step${n}`);
+  el.className = `step ${cls}`;
+  if (cls === 'active') el.querySelector('.step-num').textContent = '↻';
+}
+
+function hide(id) { document.getElementById(id).style.display = 'none'; }
+
+function reset() {
+  files = [];
+  if (es) { es.close(); es = null; }
+
+  document.getElementById('uploadSection').style.display = '';
+  document.getElementById('progressSection').classList.remove('show');
+  document.getElementById('doneSection').classList.remove('show');
+  document.getElementById('globalErr').style.display = 'none';
+
+  renderPhotos();
+  diaryTA.value = '';
+  updateEntryCount();
+  updateReqs();
+
+  document.getElementById('genBtn').textContent = '릴스 생성하기 ✨';
+
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById(`step${i}`);
+    el.className = 'step';
+    el.querySelector('.step-num').textContent = i;
+    document.getElementById(`d${i}`).textContent =
+      ['GPT-4o로 일기 분석 중...','BGM & 색감 필터 결정','GPT-4o Vision으로 사진 채점 중...','ffmpeg으로 영상 생성 중...'][i-1];
+  }
+  document.getElementById('pbarWrap').style.display = 'none';
+  document.getElementById('pbarFill').style.width   = '0%';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+updateReqs();
+</script>
+</body>
+</html>

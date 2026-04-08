@@ -3,3 +3,5 @@ node_modules/
 output/
 input/photos/*
 !input/photos/.gitkeep
+jobs/
+tmp/
