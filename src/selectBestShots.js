@@ -46,57 +46,54 @@ async function encodeImageForVision(filePath) {
 }
 
 /**
- * Score a batch of photos using GPT-4o Vision in a single API call.
+ * Score a single photo using GPT-4o Vision.
+ * Returns a score 1–10, or 5 as fallback if the model refuses or gives unexpected output.
+ * @param {OpenAI} openai
+ * @param {{filePath: string, base64: string}} item
+ * @returns {Promise<{filePath: string, score: number}>}
+ */
+async function scoreOne(openai, item) {
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: 'Rate this photo from 1 to 10 based on composition, brightness, clarity, and emotional appeal. Reply with a single integer only.',
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:image/jpeg;base64,${item.base64}`,
+                detail: 'low',
+              },
+            },
+          ],
+        },
+      ],
+      max_tokens: 10,
+    });
+
+    const raw = response.choices[0].message.content.trim();
+    const num = parseFloat(raw.match(/\d+(\.\d+)?/)?.[0] ?? '5');
+    return { filePath: item.filePath, score: isNaN(num) ? 5 : Math.min(10, Math.max(1, num)) };
+  } catch {
+    // On any API error, assign neutral score and continue
+    return { filePath: item.filePath, score: 5 };
+  }
+}
+
+/**
+ * Score a batch of photos using GPT-4o Vision (one call per photo).
  * @param {OpenAI} openai
  * @param {Array<{filePath: string, base64: string}>} batch
  * @returns {Promise<Array<{filePath: string, score: number}>>}
  */
 async function scoreBatch(openai, batch) {
-  const content = [
-    {
-      type: 'text',
-      text: `You are a photo scoring AI. Score each of the ${batch.length} photos below from 1–10 based on:
-- Composition (rule of thirds, balance, framing)
-- Brightness & exposure (well-lit, not over/underexposed)
-- Emotional impact (warmth, authenticity, storytelling quality)
-- Sharpness & clarity
-
-Respond with ONLY a JSON array of numbers, one score per photo, in order.
-Example for 3 photos: [7, 9, 5]`,
-    },
-  ];
-
-  for (let i = 0; i < batch.length; i++) {
-    content.push({
-      type: 'text',
-      text: `Photo ${i + 1}:`,
-    });
-    content.push({
-      type: 'image_url',
-      image_url: {
-        url: `data:image/jpeg;base64,${batch[i].base64}`,
-        detail: 'low',
-      },
-    });
-  }
-
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages: [{ role: 'user', content }],
-    max_tokens: 100,
-  });
-
-  const raw = response.choices[0].message.content.trim();
-  const match = raw.match(/\[[\d,\s.]+\]/);
-  if (!match) {
-    throw new Error(`Unexpected Vision API response: ${raw}`);
-  }
-  const scores = JSON.parse(match[0]);
-
-  return batch.map((item, i) => ({
-    filePath: item.filePath,
-    score: scores[i] ?? 5,
-  }));
+  return Promise.all(batch.map(item => withRetry(() => scoreOne(openai, item))));
 }
 
 /**
