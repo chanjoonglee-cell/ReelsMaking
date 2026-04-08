@@ -1,6 +1,6 @@
 /**
  * Step 4: Video Generation
- * Uses ffmpeg to compose a ~30s Instagram Reels-format video:
+ * Uses ffmpeg (via child_process.spawn) to compose a ~30s Instagram Reels video:
  * - 1080×1920 (9:16 vertical)
  * - Ken Burns pan/zoom effect per photo
  * - Crossfade transitions (0.8s)
@@ -9,7 +9,7 @@
  * - H.264 MP4 output
  */
 
-const ffmpeg = require('fluent-ffmpeg');
+const { spawn } = require('child_process');
 const fs = require('fs-extra');
 const path = require('path');
 const sharp = require('sharp');
@@ -43,7 +43,7 @@ async function preparePhoto(src, tmpDir, index) {
 
 /**
  * Build a Ken Burns zoom/pan filter for a single photo.
- * Alternates between zoom-in-center, zoom-in-top-left, zoom-in-bottom-right.
+ * Alternates between three pan directions to add visual variety.
  * @param {number} index
  * @param {number} slideDuration
  * @returns {string} zoompan filter string
@@ -53,7 +53,6 @@ function kenBurnsFilter(index, slideDuration) {
   const zoomTarget = 1.08; // 8% zoom
   const zoomStep = (zoomTarget - 1) / frames;
 
-  // Alternate pan directions
   const patterns = [
     // Zoom in, pan slightly right
     `zoompan=z='min(zoom+${zoomStep.toFixed(6)},${zoomTarget})':x='iw/2-(iw/zoom/2)+${0.02}*(on/${frames})*(iw/2)':y='ih/2-(ih/zoom/2)':d=${frames}:s=${OUTPUT_WIDTH}x${OUTPUT_HEIGHT}:fps=${FPS}`,
@@ -67,6 +66,7 @@ function kenBurnsFilter(index, slideDuration) {
 
 /**
  * Wrap long subtitle text to prevent overflow.
+ * Returns ffmpeg-compatible multi-line text (literal \n, not actual newline).
  * @param {string} text
  * @param {number} maxChars
  * @returns {string}
@@ -84,19 +84,70 @@ function wrapText(text, maxChars = 55) {
     }
   }
   if (current) lines.push(current.trim());
-  // ffmpeg drawtext expects literal backslash-n for line breaks, not the actual newline character
+  // ffmpeg drawtext expects literal backslash-n for line breaks
   return lines.join('\\n');
+}
+
+/**
+ * Run ffmpeg with the given arguments, reporting progress via onProgress.
+ * @param {string[]} args
+ * @param {number} totalDuration - Total video duration in seconds (for % calc)
+ * @param {Function} [onProgress] - Called with 0-100
+ * @returns {Promise<void>}
+ */
+function runFfmpeg(args, totalDuration, onProgress) {
+  return new Promise((resolve, reject) => {
+    const proc = spawn('ffmpeg', args, { stdio: ['ignore', 'ignore', 'pipe'] });
+
+    let stderrBuf = '';
+    proc.stderr.on('data', chunk => {
+      stderrBuf += chunk.toString();
+
+      // Parse progress from lines like: time=00:00:15.50
+      const lines = stderrBuf.split('\r');
+      for (const line of lines) {
+        const m = line.match(/time=(\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
+        if (m && onProgress) {
+          const currentSec =
+            parseInt(m[1], 10) * 3600 +
+            parseInt(m[2], 10) * 60 +
+            parseInt(m[3], 10) +
+            parseInt(m[4], 10) / 100;
+          onProgress(Math.min(99, Math.round((currentSec / totalDuration) * 100)));
+        }
+      }
+      // Keep only last line in buffer (avoid unbounded growth)
+      stderrBuf = lines[lines.length - 1];
+    });
+
+    proc.on('close', code => {
+      if (code === 0) {
+        onProgress?.(100);
+        resolve();
+      } else {
+        reject(new Error(`ffmpeg exited with code ${code}.\nLast output:\n${stderrBuf}`));
+      }
+    });
+
+    proc.on('error', err => {
+      if (err.code === 'ENOENT') {
+        reject(new Error('ffmpeg not found. Install it first:\n  brew install ffmpeg   (macOS)\n  apt install ffmpeg    (Ubuntu/Debian)'));
+      } else {
+        reject(err);
+      }
+    });
+  });
 }
 
 /**
  * Generate the reels video.
  *
  * @param {object} opts
- * @param {string[]} opts.photos       - Ordered list of photo file paths (top 10)
- * @param {object[]} opts.diaries      - Diary entries array
- * @param {string}   opts.bgmPath      - Path to BGM mp3 file
+ * @param {string[]} opts.photos        - Ordered list of photo file paths
+ * @param {object[]} opts.diaries       - Diary entries array
+ * @param {string|null} opts.bgmPath    - Path to BGM mp3 file (null = no audio)
  * @param {number}   opts.slideDuration - Seconds per slide
- * @param {string}   opts.ffmpegFilter  - Color/style filter string
+ * @param {string}   opts.ffmpegFilter  - Color/style vf filter string
  * @param {string}   opts.outputPath    - Destination .mp4 path
  * @param {Function} [opts.onProgress]  - Called with progress % (0–100)
  * @returns {Promise<void>}
@@ -111,25 +162,21 @@ async function generateVideo({ photos, diaries, bgmPath, slideDuration, ffmpegFi
     );
 
     const photoCount = processedPhotos.length;
-    // Each slide contributes (slideDuration) seconds; crossfade overlaps adjacent clips
     const totalDuration = photoCount * slideDuration - (photoCount - 1) * CROSSFADE_DURATION;
+    const hasBgm = bgmPath != null && fs.existsSync(bgmPath);
 
-    // 2. Build ffmpeg filter_complex for slideshow with crossfades
-    //    Each photo: [i] → scale → kenburns → color filter → labeled [vN]
-    //    Then xfade chain: [v0][v1] xfade → [x01], [x01][v2] xfade → [x012] ...
+    // 2. Build filter_complex
     const filterParts = [];
 
+    // Per-photo: Ken Burns + color filter
     for (let i = 0; i < photoCount; i++) {
-      const kb = kenBurnsFilter(i, slideDuration);
-      // Apply Ken Burns then color/mood filter
       filterParts.push(
-        `[${i}:v]${kb},${ffmpegFilter},setsar=1[v${i}]`
+        `[${i}:v]${kenBurnsFilter(i, slideDuration)},${ffmpegFilter},setsar=1[v${i}]`
       );
     }
 
-    // Build xfade chain: [v0][v1] → [x1], [x1][v2] → [x2], ..., [x(n-2)][v(n-1)] → [vout]
+    // Xfade chain
     if (photoCount === 1) {
-      // Edge case: single photo, just rename its label
       filterParts[0] = filterParts[0].replace(/\[v0\]$/, '[vout]');
     } else {
       let prevLabel = '[v0]';
@@ -143,19 +190,17 @@ async function generateVideo({ photos, diaries, bgmPath, slideDuration, ffmpegFi
       }
     }
 
-    // 3. Subtitle: pick one diary sentence per photo (cycle through diaries)
-    //    We'll add subtitles via drawtext filter chained after [vout]
+    // Subtitle drawtext filters (one enable-window per photo)
     const drawTexts = processedPhotos.map((_, i) => {
       const diary = diaries[i % diaries.length];
       const snippet = wrapText(diary.text.split('.')[0] + '.', 55)
-        // Escape special chars for ffmpeg drawtext
-        .replace(/'/g, "\u2019")
+        .replace(/'/g, '\u2019')   // straight apostrophe → curly (breaks drawtext quoting)
         .replace(/:/g, '\\:')
         .replace(/\[/g, '\\[')
         .replace(/\]/g, '\\]');
 
       const startTime = (i * (slideDuration - CROSSFADE_DURATION)).toFixed(3);
-      const endTime = ((i + 1) * (slideDuration - CROSSFADE_DURATION) + CROSSFADE_DURATION).toFixed(3);
+      const endTime   = ((i + 1) * (slideDuration - CROSSFADE_DURATION) + CROSSFADE_DURATION).toFixed(3);
 
       return (
         `drawtext=text='${snippet}':` +
@@ -166,11 +211,9 @@ async function generateVideo({ photos, diaries, bgmPath, slideDuration, ffmpegFi
       );
     });
 
-    const subtitleFilter = drawTexts.join(',');
-    filterParts.push(`[vout]${subtitleFilter}[vfinal]`);
+    filterParts.push(`[vout]${drawTexts.join(',')}[vfinal]`);
 
-    // 4. BGM audio filter: route through filter_complex for clean stream mapping
-    const hasBgm = bgmPath && require('fs').existsSync(bgmPath);
+    // BGM: volume + fade-out + trim to exact duration
     if (hasBgm) {
       const fadeStart = Math.max(0, totalDuration - BGM_FADEOUT_SEC).toFixed(3);
       filterParts.push(
@@ -180,49 +223,38 @@ async function generateVideo({ photos, diaries, bgmPath, slideDuration, ffmpegFi
       );
     }
 
-    const filterComplex = filterParts.join(';');
+    // 3. Assemble ffmpeg args
+    const args = [];
 
-    // 5. Build and run ffmpeg command
-    await new Promise((resolve, reject) => {
-      let cmd = ffmpeg();
+    for (const photo of processedPhotos) {
+      args.push('-loop', '1', '-i', photo);
+    }
+    if (hasBgm) {
+      args.push('-i', bgmPath);
+    }
 
-      // Add photo inputs
-      for (const photo of processedPhotos) {
-        cmd = cmd.input(photo).inputOptions(['-loop 1']);
-      }
+    args.push('-filter_complex', filterParts.join(';'));
 
-      // Add BGM input
-      if (hasBgm) {
-        cmd = cmd.input(bgmPath);
-      }
+    args.push('-map', '[vfinal]');
+    if (hasBgm) args.push('-map', '[aout]');
 
-      cmd
-        .complexFilter(filterComplex)
-        .outputOptions([
-          '-map [vfinal]',
-          hasBgm ? '-map [aout]' : '',
-          `-t ${totalDuration.toFixed(3)}`,
-          '-c:v libx264',
-          '-preset medium',
-          '-crf 23',
-          hasBgm ? '-c:a aac' : '',
-          hasBgm ? '-b:a 192k' : '',
-          '-movflags +faststart',
-          '-pix_fmt yuv420p',
-          `-r ${FPS}`,
-        ].filter(Boolean))
-        .output(outputPath)
-        .on('progress', info => {
-          if (onProgress && info.percent != null) {
-            onProgress(Math.min(100, Math.round(info.percent)));
-          }
-        })
-        .on('end', resolve)
-        .on('error', (err, stdout, stderr) => {
-          reject(new Error(`ffmpeg error: ${err.message}\n${stderr}`));
-        })
-        .run();
-    });
+    args.push(
+      '-t', totalDuration.toFixed(3),
+      '-c:v', 'libx264',
+      '-preset', 'medium',
+      '-crf', '23',
+    );
+    if (hasBgm) args.push('-c:a', 'aac', '-b:a', '192k');
+    args.push(
+      '-movflags', '+faststart',
+      '-pix_fmt', 'yuv420p',
+      '-r', String(FPS),
+      '-y',         // overwrite output without prompt
+      outputPath,
+    );
+
+    // 4. Run
+    await runFfmpeg(args, totalDuration, onProgress);
   } finally {
     await fs.remove(tmpDir);
   }
