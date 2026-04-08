@@ -12,6 +12,27 @@ const { OpenAI } = require('openai');
 const MAX_PHOTOS_TO_ANALYZE = 30;
 
 /**
+ * Retry an async function with exponential backoff.
+ * Retries on rate-limit (429) and transient server (5xx) errors.
+ * @param {Function} fn
+ * @param {number} maxAttempts
+ * @returns {Promise<*>}
+ */
+async function withRetry(fn, maxAttempts = 3) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const retryable = err.status === 429 || (err.status >= 500 && err.status < 600);
+      if (!retryable || attempt === maxAttempts) throw err;
+      const delayMs = 1000 * Math.pow(2, attempt - 1);
+      process.stderr.write(`      [재시도 ${attempt}/${maxAttempts - 1}] ${err.message} — ${delayMs / 1000}s 후 재시도\n`);
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+  }
+}
+
+/**
  * Resize image to a smaller size for API efficiency and encode as base64.
  * @param {string} filePath
  * @returns {Promise<string>} base64 encoded JPEG
@@ -120,7 +141,7 @@ async function selectBestShots(photosDir, targetCount = 10) {
   let allScored = [];
   for (let i = 0; i < encoded.length; i += SCORE_BATCH) {
     const batch = encoded.slice(i, i + SCORE_BATCH);
-    const scored = await scoreBatch(openai, batch);
+    const scored = await withRetry(() => scoreBatch(openai, batch));
     allScored.push(...scored);
   }
 

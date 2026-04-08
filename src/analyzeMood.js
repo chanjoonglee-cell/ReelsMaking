@@ -9,6 +9,27 @@ const { OpenAI } = require('openai');
 const VALID_MOODS = ['warm', 'calm', 'energetic', 'melancholic'];
 
 /**
+ * Retry an async function with exponential backoff.
+ * Retries on rate-limit (429) and transient server (5xx) errors.
+ * @param {Function} fn
+ * @param {number} maxAttempts
+ * @returns {Promise<*>}
+ */
+async function withRetry(fn, maxAttempts = 3) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const retryable = err.status === 429 || (err.status >= 500 && err.status < 600);
+      if (!retryable || attempt === maxAttempts) throw err;
+      const delayMs = 1000 * Math.pow(2, attempt - 1); // 1s, 2s, 4s
+      process.stderr.write(`      [재시도 ${attempt}/${maxAttempts - 1}] ${err.message} — ${delayMs / 1000}s 후 재시도\n`);
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+  }
+}
+
+/**
  * Analyze the mood of diary entries using GPT-4o.
  * @param {Array<{date: string, text: string, photoFile: string}>} diaries
  * @returns {Promise<{mood: string, confidence: number, reasoning: string}>}
@@ -30,18 +51,20 @@ Analyze the overall emotional tone across all diary entries and classify it as e
 Respond with ONLY a JSON object in this exact format (no markdown, no extra text):
 {"mood": "<mood>", "confidence": <0-100>, "reasoning": "<one sentence in Korean explaining why>"}`;
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      {
-        role: 'user',
-        content: `Analyze the mood of these diary entries:\n\n${combinedText}`,
-      },
-    ],
-    max_tokens: 150,
-    temperature: 0.3,
-  });
+  const response = await withRetry(() =>
+    openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: `Analyze the mood of these diary entries:\n\n${combinedText}`,
+        },
+      ],
+      max_tokens: 150,
+      temperature: 0.3,
+    })
+  );
 
   const raw = response.choices[0].message.content.trim();
 

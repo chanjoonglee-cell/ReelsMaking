@@ -8,6 +8,7 @@
 require('dotenv').config();
 const path = require('path');
 const fs = require('fs-extra');
+const readline = require('readline');
 
 const { selectBestShots } = require('./selectBestShots');
 const { analyzeMood } = require('./analyzeMood');
@@ -24,6 +25,14 @@ const OUTPUT_DIR = path.join(ROOT, 'output');
 
 const MIN_DIARIES = 7;
 const MIN_PHOTOS = 20;
+
+// Cost constants (GPT-4o pricing, approximate)
+const COST_PER_PHOTO = 0.00425;  // Vision API, low-detail
+const COST_MOOD_ANALYSIS = 0.01; // one GPT-4o text call
+const MAX_PHOTOS_ANALYZED = 30;
+
+// CLI flags
+const AUTO_YES = process.argv.includes('--yes') || process.argv.includes('-y');
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function timestamp() {
@@ -53,6 +62,18 @@ function elapsed(startMs) {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
   return m > 0 ? `${m}분 ${s}초` : `${s}초`;
+}
+
+// ── Confirmation prompt ────────────────────────────────────────────────────
+async function confirm(question) {
+  if (AUTO_YES) return true;
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise(resolve => {
+    rl.question(question, answer => {
+      rl.close();
+      resolve(answer.trim().toLowerCase() !== 'n');
+    });
+  });
 }
 
 // ── Validation ─────────────────────────────────────────────────────────────
@@ -105,6 +126,20 @@ async function main() {
   log(1, TOTAL_STEPS, '데이터 확인 중... | Checking input data...');
   const { diaries, photoCount } = await validateInputs();
   indent(`일기 ${diaries.length}개, 사진 ${photoCount}장 확인됨 | Found ${diaries.length} diaries, ${photoCount} photos`);
+
+  // ── Cost estimate + confirmation ─────────────────────────────────────────
+  const photosToAnalyze = Math.min(photoCount, MAX_PHOTOS_ANALYZED);
+  const estimatedApiCost = (photosToAnalyze * COST_PER_PHOTO + COST_MOOD_ANALYSIS).toFixed(3);
+  console.log('');
+  console.log(`  예상 API 비용: ~$${estimatedApiCost}  (사진 ${photosToAnalyze}장 Vision 분석 + 무드 분석)`);
+  console.log(`  Estimated API cost: ~$${estimatedApiCost}  (${photosToAnalyze} photos Vision + mood analysis)`);
+  if (!AUTO_YES) {
+    const ok = await confirm('  계속하시겠습니까? Continue? (Y/n): ');
+    if (!ok) {
+      console.log('  취소됨. | Cancelled.');
+      process.exit(0);
+    }
+  }
 
   // ── Step 2: Mood analysis ────────────────────────────────────────────────
   log(2, TOTAL_STEPS, '무드 분석 중... | Analyzing mood...');
