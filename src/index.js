@@ -112,15 +112,9 @@ async function main() {
   indent(`결과: ${mood} (신뢰도 ${confidence}%) | Result: ${mood} (confidence ${confidence}%)`);
   if (reasoning) indent(`근거: ${reasoning}`);
 
-  // ── Step 3: Best shots ───────────────────────────────────────────────────
-  log(3, TOTAL_STEPS, `베스트컷 선정 중... | Selecting best shots...`);
-  const { topShots, estimatedCost } = await selectBestShots(PHOTOS_DIR);
-  indent(`선정 완료: ${topShots.length}장 | Selected: ${topShots.length} photos`);
-  indent(`예상 API 비용: ${estimatedCost}`);
-
-  // ── Step 4: Match assets ─────────────────────────────────────────────────
-  log(4, TOTAL_STEPS, 'BGM & 필터 매칭 중... | Matching BGM & filter...');
-  const { bgmPath, slideDuration, ffmpegFilter, description } = matchAssets(mood, ASSETS_DIR);
+  // ── Step 3: Match assets (needed before photo selection for targetPhotoCount) ──
+  log(3, TOTAL_STEPS, 'BGM & 필터 매칭 중... | Matching BGM & filter...');
+  const { bgmPath, slideDuration, targetPhotoCount, ffmpegFilter, description } = matchAssets(mood, ASSETS_DIR);
 
   const bgmExists = await fs.pathExists(bgmPath);
   if (!bgmExists) {
@@ -130,8 +124,16 @@ async function main() {
   indent(`BGM: ${bgmPath}`);
   indent(`필터: ${description}`);
 
+  // ── Step 4: Best shots ───────────────────────────────────────────────────
+  log(4, TOTAL_STEPS, `베스트컷 선정 중... | Selecting best shots... (목표 ${targetPhotoCount}장)`);
+  const { topShots, estimatedCost } = await selectBestShots(PHOTOS_DIR, targetPhotoCount);
+  const estimatedDuration = (topShots.length * slideDuration - (topShots.length - 1) * 0.8).toFixed(1);
+  indent(`선정 완료: ${topShots.length}장 | Selected: ${topShots.length} photos`);
+  indent(`예상 영상 길이: ~${estimatedDuration}초 | Estimated duration: ~${estimatedDuration}s`);
+  indent(`예상 API 비용: ${estimatedCost}`);
+
   // ── Step 5: Generate video ───────────────────────────────────────────────
-  log(5, TOTAL_STEPS, '영상 합성 중... | Generating video...');
+  log(5, TOTAL_STEPS, `영상 합성 중... | Generating video... (~${estimatedDuration}s)`);
   await fs.ensureDir(OUTPUT_DIR);
   const outputFileName = `reels_${timestamp()}.mp4`;
   const outputPath = path.join(OUTPUT_DIR, outputFileName);

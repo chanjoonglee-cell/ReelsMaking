@@ -10,7 +10,6 @@ const sharp = require('sharp');
 const { OpenAI } = require('openai');
 
 const MAX_PHOTOS_TO_ANALYZE = 30;
-const TOP_SHOTS_COUNT = 10;
 
 /**
  * Resize image to a smaller size for API efficiency and encode as base64.
@@ -82,9 +81,10 @@ Example for 3 photos: [7, 9, 5]`,
 /**
  * Select the top N best shots from a photos directory.
  * @param {string} photosDir - Path to directory containing photos
+ * @param {number} targetCount - How many top shots to return (default 10)
  * @returns {Promise<{topShots: string[], estimatedCost: string}>}
  */
-async function selectBestShots(photosDir) {
+async function selectBestShots(photosDir, targetCount = 10) {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
   const allFiles = (await fs.readdir(photosDir))
@@ -124,9 +124,9 @@ async function selectBestShots(photosDir) {
     allScored.push(...scored);
   }
 
-  // Sort descending by score and take top N
+  // Sort descending by score and take top N (clamped to available photos)
   allScored.sort((a, b) => b.score - a.score);
-  const topShots = allScored.slice(0, TOP_SHOTS_COUNT).map(s => s.filePath);
+  const topShots = allScored.slice(0, Math.min(targetCount, allScored.length)).map(s => s.filePath);
 
   // Rough cost estimate: gpt-4o low-detail image = ~$0.00425 per image
   const estimatedCost = `~$${(totalPhotos * 0.00425).toFixed(2)}`;

@@ -117,7 +117,6 @@ async function generateVideo({ photos, diaries, bgmPath, slideDuration, ffmpegFi
     //    Each photo: [i] → scale → kenburns → color filter → labeled [vN]
     //    Then xfade chain: [v0][v1] xfade → [x01], [x01][v2] xfade → [x012] ...
     const filterParts = [];
-    const inputLabels = [];
 
     for (let i = 0; i < photoCount; i++) {
       const kb = kenBurnsFilter(i, slideDuration);
@@ -125,25 +124,22 @@ async function generateVideo({ photos, diaries, bgmPath, slideDuration, ffmpegFi
       filterParts.push(
         `[${i}:v]${kb},${ffmpegFilter},setsar=1[v${i}]`
       );
-      inputLabels.push(`[v${i}]`);
     }
 
-    // Build xfade chain
-    let prevLabel = '[v0]';
-    for (let i = 1; i < photoCount; i++) {
-      const offset = (i * slideDuration - i * CROSSFADE_DURATION).toFixed(3);
-      const outLabel = i === photoCount - 1 ? '[vout]' : `[x${i}]`;
-      filterParts.push(
-        `${prevLabel}[v${i}]xfade=transition=fade:duration=${CROSSFADE_DURATION}:offset=${offset}${outLabel}`
-      );
-      prevLabel = outLabel.replace(/^\[/, '[');
-      // Fix: outLabel already has brackets
-      prevLabel = outLabel;
-    }
-
-    // If only 1 photo (edge case), rename label
+    // Build xfade chain: [v0][v1] → [x1], [x1][v2] → [x2], ..., [x(n-2)][v(n-1)] → [vout]
     if (photoCount === 1) {
-      filterParts[0] = filterParts[0].replace('[v0]', '[vout]');
+      // Edge case: single photo, just rename its label
+      filterParts[0] = filterParts[0].replace(/\[v0\]$/, '[vout]');
+    } else {
+      let prevLabel = '[v0]';
+      for (let i = 1; i < photoCount; i++) {
+        const offset = (i * slideDuration - i * CROSSFADE_DURATION).toFixed(3);
+        const outLabel = i === photoCount - 1 ? '[vout]' : `[x${i}]`;
+        filterParts.push(
+          `${prevLabel}[v${i}]xfade=transition=fade:duration=${CROSSFADE_DURATION}:offset=${offset}${outLabel}`
+        );
+        prevLabel = outLabel;
+      }
     }
 
     // 3. Subtitle: pick one diary sentence per photo (cycle through diaries)
@@ -172,8 +168,16 @@ async function generateVideo({ photos, diaries, bgmPath, slideDuration, ffmpegFi
     const subtitleFilter = drawTexts.join(',');
     filterParts.push(`[vout]${subtitleFilter}[vfinal]`);
 
-    // 4. BGM audio filter: volume + fade-out
-    const audioFilter = `volume=${BGM_VOLUME},afade=t=out:st=${(totalDuration - BGM_FADEOUT_SEC).toFixed(3)}:d=${BGM_FADEOUT_SEC}`;
+    // 4. BGM audio filter: route through filter_complex for clean stream mapping
+    const hasBgm = bgmPath && require('fs').existsSync(bgmPath);
+    if (hasBgm) {
+      const fadeStart = Math.max(0, totalDuration - BGM_FADEOUT_SEC).toFixed(3);
+      filterParts.push(
+        `[${photoCount}:a]volume=${BGM_VOLUME},` +
+        `afade=t=out:st=${fadeStart}:d=${BGM_FADEOUT_SEC},` +
+        `atrim=end=${totalDuration.toFixed(3)}[aout]`
+      );
+    }
 
     const filterComplex = filterParts.join(';');
 
@@ -187,7 +191,6 @@ async function generateVideo({ photos, diaries, bgmPath, slideDuration, ffmpegFi
       }
 
       // Add BGM input
-      const hasBgm = bgmPath && require('fs').existsSync(bgmPath);
       if (hasBgm) {
         cmd = cmd.input(bgmPath);
       }
@@ -196,8 +199,7 @@ async function generateVideo({ photos, diaries, bgmPath, slideDuration, ffmpegFi
         .complexFilter(filterComplex)
         .outputOptions([
           '-map [vfinal]',
-          hasBgm ? `-map ${photoCount}:a` : '',
-          hasBgm ? `-af ${audioFilter}` : '',
+          hasBgm ? '-map [aout]' : '',
           `-t ${totalDuration.toFixed(3)}`,
           '-c:v libx264',
           '-preset medium',
