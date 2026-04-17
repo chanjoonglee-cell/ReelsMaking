@@ -6,12 +6,31 @@ HWP  path: DOCX → `libreoffice --convert-to hwp` (requires LibreOffice).
 """
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 
 import markdown as md_lib
+
+
+_IMG_RE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
+_UNSAFE_ALT = re.compile(r"[\[\]()\"'`:]|\s+")
+
+
+def _sanitize_image_alt(markdown_text: str) -> str:
+    """Drop characters pandoc chokes on inside the image alt text.
+
+    Any `[`, `]`, `(`, `)`, quotes, colons and whitespace runs are replaced
+    with a single space. The URL half of the image is untouched.
+    """
+    def repl(m: "re.Match[str]") -> str:
+        alt = _UNSAFE_ALT.sub(" ", m.group(1)).strip()
+        if len(alt) > 40:
+            alt = alt[:40]
+        return f"![{alt}]({m.group(2)})"
+    return _IMG_RE.sub(repl, markdown_text)
 
 
 class ExportError(Exception):
@@ -44,11 +63,15 @@ def _markdown_to_html(markdown_text: str, title: str) -> str:
     return HTML_TEMPLATE.format(title=title, body=body)
 
 
-def export_pdf(markdown_text: str, title: str, out_path: Path) -> Path:
+def export_pdf(markdown_text: str, title: str, out_path: Path, resource_dir: Path | None = None) -> Path:
     from weasyprint import HTML
 
+    markdown_text = _sanitize_image_alt(markdown_text)
     html = _markdown_to_html(markdown_text, title)
-    HTML(string=html).write_pdf(str(out_path))
+    # base_url lets WeasyPrint resolve relative image paths like `images/xxx.png`
+    # against the session directory.
+    base_url = str(resource_dir) + "/" if resource_dir else None
+    HTML(string=html, base_url=base_url).write_pdf(str(out_path))
     return out_path
 
 
@@ -59,6 +82,7 @@ def export_docx(markdown_text: str, title: str, out_path: Path, reference_docx: 
 
 
 def _export_docx_pandoc(markdown_text: str, out_path: Path, reference_docx: Path | None = None, resource_dir: Path | None = None) -> Path:
+    markdown_text = _sanitize_image_alt(markdown_text)
     # Write the .md inside the resource_dir (if given) so pandoc resolves
     # relative image paths like `images/img_pdf_003.png` against it.
     if resource_dir:

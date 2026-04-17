@@ -119,8 +119,21 @@ async def _caption_all(session_id: str, images: list[dict[str, Any]]) -> list[di
     captions = await llm_client.caption_images_batch(paths)
     for img, cap in zip(pending, captions):
         img["caption"] = cap
-    # Drop images the captioner said are decorative/empty.
-    return [img for img in images if img.get("caption", "").strip() != "(무의미)"]
+
+    def _keep(img: dict[str, Any]) -> bool:
+        caption = (img.get("caption") or "").strip()
+        if not caption:
+            return False
+        if caption.startswith("(무의미") or caption.startswith("(캡션 실패"):
+            # Also clean the file so it doesn't clutter the images folder.
+            try:
+                (out_dir / img["filename"]).unlink()
+            except FileNotFoundError:
+                pass
+            return False
+        return True
+
+    return [img for img in images if _keep(img)]
 
 
 async def _run_pipeline(session_id: str, saved_sources: list[dict[str, str]], saved_templates: list[dict[str, str]]) -> None:
@@ -408,7 +421,7 @@ async def api_export(session_id: str, fmt: str):
 
     try:
         if fmt == "pdf":
-            out = exporters.export_pdf(markdown_text, title, out_dir / f"{safe_title}.pdf")
+            out = exporters.export_pdf(markdown_text, title, out_dir / f"{safe_title}.pdf", resource_dir=sdir)
             media = "application/pdf"
         elif fmt == "docx":
             out = exporters.export_docx(

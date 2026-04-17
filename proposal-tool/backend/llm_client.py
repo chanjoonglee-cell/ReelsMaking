@@ -61,6 +61,7 @@ PEOPLE / TEAM — 특별히 엄격하게 지킬 것:
 이미지 사용:
 - "사용 가능한 이미지 목록" 이 제공되면, 섹션 내용과 **명백히 관련 있는** 이미지만 본문에 삽입한다.
 - 삽입 형식은 정확히 `![간단한 한국어 캡션](images/파일명.png)` Markdown 문법.
+- alt 텍스트(대괄호 `[...]` 안) 는 **한글·숫자·공백만** 사용. 대괄호, 소괄호, 따옴표, 콜론, 마크다운 기호, 줄바꿈 금지. 길이 ≤30자.
 - 목표는 문단 1개당 이미지 1장 수준. 억지로 끼워넣지 말고, 관련 없으면 넣지 말 것.
 - 같은 이미지를 한 섹션에서 여러 번 삽입하지 말 것.
 - 목록에 없는 파일명을 지어내지 말 것 — 반드시 제공된 목록의 파일명만 사용.
@@ -152,7 +153,7 @@ async def caption_image(image_path: Path) -> str:
     mime = "image/jpeg" if suffix in {"jpg", "jpeg"} else f"image/{suffix}"
     b64 = base64.b64encode(image_path.read_bytes()).decode("ascii")
     resp = await client().chat.completions.create(
-        model=config.MODEL,
+        model=config.VISION_MODEL,
         max_tokens=120,
         messages=[
             {"role": "system", "content": IMAGE_CAPTION_SYSTEM},
