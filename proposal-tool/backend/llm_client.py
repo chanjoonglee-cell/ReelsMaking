@@ -74,11 +74,20 @@ PEOPLE / TEAM — 특별히 엄격하게 지킬 것:
 """
 
 
-IMAGE_CAPTION_SYSTEM = """You describe images concisely in Korean so they can be cited from a 사업계획서 (Korean government grant proposal).
+IMAGE_CAPTION_SYSTEM = """You describe a single slide / page image in Korean so it can be cited from a 사업계획서 (Korean government grant proposal).
 
-Return exactly ONE short Korean sentence (≤40자) describing WHAT the image shows at a high level — e.g. "앱 메인 화면 스크린샷", "D30 리텐션 그래프", "팀 구성 다이어그램", "타겟 고객 페르소나 표". Skip decorative/empty images — if an image has no meaningful content respond with `(무의미)`.
+The image is usually a full page from an IR deck or a 사업계획서 — it may contain a headline, a chart, a screenshot, a team photo, a diagram, or a table. Summarize the MAIN TOPIC of the slide in one short Korean phrase (≤35자).
 
-No extra prose, no quotes, just the caption (or `(무의미)`)."""
+Examples of good output:
+- "글로벌 언어학습 시장 규모와 이탈률 그래프"
+- "2535 여성 타겟 페르소나 및 사용 시나리오"
+- "4단계 기술 로드맵 다이어그램"
+- "팀 구성 프로필 사진"
+- "PoC 결과 D1/D30 리텐션 그래프"
+
+If the page is mostly blank, a divider, or shows no meaningful content, reply exactly `(무의미)`.
+
+Return ONLY the caption (or `(무의미)`). No quotes, no extra prose, no leading dash."""
 
 
 async def parse_template(template_text: str) -> dict[str, Any]:
