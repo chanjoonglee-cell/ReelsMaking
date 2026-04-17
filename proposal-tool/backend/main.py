@@ -49,14 +49,15 @@ async def page_editor(request: Request, session_id: str):
 
 
 # ───── session lifecycle ─────
-def _save_uploads(files: list[UploadFile], dest: Path) -> list[dict[str, str]]:
+async def _save_uploads(files: list[UploadFile], dest: Path) -> list[dict[str, str]]:
     saved: list[dict[str, str]] = []
     for uf in files:
         if not uf.filename:
             continue
         safe_name = Path(uf.filename).name
         target = dest / safe_name
-        target.write_bytes(uf.file.read())
+        data = await uf.read()
+        target.write_bytes(data)
         saved.append({"name": safe_name, "path": str(target)})
     return saved
 
@@ -73,6 +74,29 @@ def _extract_source_chunks(source_files: list[dict[str, str]]) -> list[dict[str,
         if text.strip():
             chunks.append({"name": f["name"], "text": text})
     return chunks
+
+
+def _extract_template_text(template_files: list[dict[str, str]]) -> str:
+    parts: list[str] = []
+    for f in template_files:
+        try:
+            text = parsers.extract_text(Path(f["path"]))
+        except Exception as e:
+            text = f"(파일 파싱 실패: {e})"
+        parts.append(f"=== {f['name']} ===\n{text}")
+    return "\n\n".join(parts)
+
+
+async def _run_pipeline(session_id: str, saved_sources: list[dict[str, str]], saved_templates: list[dict[str, str]]) -> None:
+    """Parse uploaded files (in a thread) then run generation."""
+    try:
+        await _emit(session_id, {"stage": "parse_files", "message": "파일 파싱 중..."})
+        loop = asyncio.get_running_loop()
+        source_chunks = await loop.run_in_executor(None, _extract_source_chunks, saved_sources)
+        template_text = await loop.run_in_executor(None, _extract_template_text, saved_templates)
+        await _run_generation(session_id, source_chunks, template_text)
+    except Exception as e:
+        await _emit(session_id, {"stage": "error", "message": str(e)})
 
 
 async def _run_generation(session_id: str, source_chunks: list[dict[str, str]], template_text: str) -> None:
@@ -152,8 +176,8 @@ async def create_session(
 
     session_id = storage.new_session_id()
     sdir = storage.session_dir(session_id)
-    saved_sources = _save_uploads(sources, sdir / "sources")
-    saved_templates = _save_uploads(templates_, sdir / "templates")
+    saved_sources = await _save_uploads(sources, sdir / "sources")
+    saved_templates = await _save_uploads(templates_, sdir / "templates")
 
     meta = {
         "name": name or session_id,
@@ -166,13 +190,9 @@ async def create_session(
     }
     storage.save_meta(session_id, meta)
 
-    # Parse inputs (sync — small files) and kick off background generation.
-    source_chunks = _extract_source_chunks(saved_sources)
-    template_text = "\n\n".join(
-        f"=== {f['name']} ===\n{parsers.extract_text(Path(f['path']))}"
-        for f in saved_templates
-    )
-    asyncio.create_task(_run_generation(session_id, source_chunks, template_text))
+    # Parsing + generation run in the background so the client gets session_id
+    # immediately and can subscribe to the SSE progress stream.
+    asyncio.create_task(_run_pipeline(session_id, saved_sources, saved_templates))
 
     return {"session_id": session_id}
 

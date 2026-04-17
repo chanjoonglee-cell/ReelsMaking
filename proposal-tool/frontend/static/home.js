@@ -92,7 +92,8 @@ document.getElementById("btn-generate").addEventListener("click", async () => {
   const es = new EventSource(`/api/sessions/${sessionId}/stream`);
   es.onmessage = (ev) => {
     const data = JSON.parse(ev.data);
-    if (data.stage === "parse_template") push("양식 파싱 중…");
+    if (data.stage === "parse_files") push("업로드한 파일 파싱 중…");
+    else if (data.stage === "parse_template") push("양식 파싱 중…");
     else if (data.stage === "outline_ready") push(`섹션 ${data.sections.length}개 발견`);
     else if (data.stage === "section_start") push(`  섹션 ${data.index + 1} 생성 시작: ${data.title}`);
     else if (data.stage === "section_done") {
