@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>정부사업 사업계획서 자동화</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+  <div class="max-w-5xl mx-auto p-8">
+    <header class="mb-10">
+      <h1 class="text-3xl font-bold tracking-tight">정부사업 사업계획서 자동화</h1>
+      <p class="text-slate-500 mt-1">원본 + 양식 → 업로드 → 짠, 초안 완성.</p>
+    </header>
+
+    <section id="upload" class="grid md:grid-cols-2 gap-6 mb-6">
+      <div>
+        <h2 class="font-semibold text-lg mb-2">① 원본 자료</h2>
+        <div id="dz-sources" class="dropzone" data-kind="sources">
+          <p class="text-slate-500">IR 덱, 기존 사업계획서, 회사 정보 문서…</p>
+          <p class="text-xs text-slate-400 mt-2">PDF / DOCX / PPTX / TXT / MD · 여러 파일 OK</p>
+          <input type="file" multiple class="hidden" />
+          <ul class="file-list mt-3 text-sm text-left"></ul>
+        </div>
+      </div>
+      <div>
+        <h2 class="font-semibold text-lg mb-2">② 사업 양식</h2>
+        <div id="dz-templates" class="dropzone" data-kind="templates">
+          <p class="text-slate-500">공고문 + 사업계획서 양식</p>
+          <p class="text-xs text-slate-400 mt-2">PDF / DOCX · 보통 1–2개</p>
+          <input type="file" multiple class="hidden" />
+          <ul class="file-list mt-3 text-sm text-left"></ul>
+        </div>
+      </div>
+    </section>
+
+    <div class="flex items-center gap-3 mb-8">
+      <input id="name" type="text" placeholder="세션 이름 (선택)" class="flex-1 px-3 py-2 border border-slate-300 rounded-md">
+      <button id="btn-generate" class="px-5 py-2.5 rounded-md bg-slate-900 text-white font-medium disabled:opacity-50">
+        초안 생성하기 →
+      </button>
+    </div>
+
+    <section id="progress" class="hidden bg-white border rounded-lg p-6 mb-8 shadow-sm">
+      <h3 class="font-semibold mb-3">생성 중…</h3>
+      <div class="space-y-2 text-sm font-mono" id="progress-log"></div>
+      <div class="mt-4 h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div id="progress-bar" class="h-full bg-slate-900 transition-all" style="width:0%"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="font-semibold text-lg mb-3">이전 세션</h2>
+      <ul id="session-list" class="divide-y divide-slate-200 border rounded-md bg-white">
+        {% for s in sessions %}
+        <li class="flex items-center justify-between p-3">
+          <a class="font-medium hover:underline" href="/editor/{{ s.id }}">{{ s.title or s.name or s.id }}</a>
+          <span class="text-xs text-slate-400">{{ s.created_at or s.id }}</span>
+        </li>
+        {% else %}
+        <li class="p-4 text-slate-400 text-sm">아직 세션이 없습니다.</li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+
+  <script src="/static/home.js"></script>
+</body>
+</html>

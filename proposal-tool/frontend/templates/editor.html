@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ meta.title or session_id }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/app.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@11/marked.min.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+  <header class="bg-white border-b sticky top-0 z-10">
+    <div class="max-w-[1400px] mx-auto px-6 py-3 flex items-center gap-4">
+      <a href="/" class="text-slate-500 hover:text-slate-900">←</a>
+      <h1 class="font-semibold flex-1 truncate" id="title">{{ meta.title or session_id }}</h1>
+      <span id="save-status" class="text-xs text-slate-400">저장됨</span>
+      <div class="flex gap-1">
+        <button class="btn-export" data-fmt="pdf">PDF</button>
+        <button class="btn-export" data-fmt="docx">DOCX</button>
+        <button class="btn-export" data-fmt="hwp">HWP</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="grid" style="grid-template-columns: 260px 1fr;">
+    <aside class="border-r bg-white min-h-[calc(100vh-56px)] p-4 overflow-y-auto">
+      <h2 class="text-xs uppercase tracking-wider text-slate-400 mb-2">섹션</h2>
+      <ul id="section-list" class="space-y-1 text-sm"></ul>
+    </aside>
+
+    <main class="p-0">
+      <textarea id="editor"></textarea>
+    </main>
+  </div>
+
+  <script>
+    window.SESSION_ID = "{{ session_id }}";
+  </script>
+  <script src="/static/editor.js"></script>
+</body>
+</html>
