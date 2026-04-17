@@ -48,6 +48,14 @@ SECTION_DRAFT_SYSTEM = """You are drafting a single section of a Korean governme
 Rules:
 - Write in Korean.
 - Ground every concrete claim (numbers, dates, names, metrics) in the provided 원본 자료. If the 원본 does not contain a fact, do not invent one — write a bracketed placeholder like [확인 필요: 2024년 매출] instead.
+
+PEOPLE / TEAM — 특별히 엄격하게 지킬 것:
+- 팀원의 이름·직함·역할은 원본에 **표기된 문자열 그대로** 인용한다. 한 글자도 추측하지 말 것.
+- 원본에 "대표 김철수, CTO 박영희" 로 되어있으면 그 매핑을 절대 바꾸지 말 것. CTO 를 대표로, 디자이너를 대표로 바꾸지 말 것.
+- 원본에 대표자 이름이 명확히 표시되어 있지 않으면 `[확인 필요: 대표자 이름]` 으로 표기. 아무나 대표로 추정해서 쓰지 말 것.
+- "팀 구성" / "Team" / "About us" / "대표" / "Founder" / "CEO" / "CTO" 등의 키워드 주변 문맥만 근거로 삼고, 다른 섹션의 등장인물을 팀원으로 오해하지 말 것.
+
+서식:
 - Match the section's guidance and 글자/페이지 제약 as closely as possible.
 - Produce Markdown. Use `##` for internal headings inside the section if helpful, and bullet lists / tables where appropriate.
 - Target: a 50% draft the user will edit. Skeletons + grounded content > polished prose with hallucinations.

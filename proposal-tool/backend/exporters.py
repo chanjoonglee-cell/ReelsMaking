@@ -52,22 +52,21 @@ def export_pdf(markdown_text: str, title: str, out_path: Path) -> Path:
     return out_path
 
 
-def export_docx(markdown_text: str, title: str, out_path: Path) -> Path:
+def export_docx(markdown_text: str, title: str, out_path: Path, reference_docx: Path | None = None) -> Path:
     if shutil.which("pandoc"):
-        return _export_docx_pandoc(markdown_text, out_path)
+        return _export_docx_pandoc(markdown_text, out_path, reference_docx)
     return _export_docx_python(markdown_text, title, out_path)
 
 
-def _export_docx_pandoc(markdown_text: str, out_path: Path) -> Path:
+def _export_docx_pandoc(markdown_text: str, out_path: Path, reference_docx: Path | None = None) -> Path:
     with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as f:
         f.write(markdown_text)
         src = Path(f.name)
     try:
-        subprocess.run(
-            ["pandoc", str(src), "-f", "markdown", "-t", "docx", "-o", str(out_path)],
-            check=True,
-            capture_output=True,
-        )
+        cmd = ["pandoc", str(src), "-f", "markdown", "-t", "docx", "-o", str(out_path)]
+        if reference_docx and reference_docx.exists():
+            cmd.extend(["--reference-doc", str(reference_docx)])
+        subprocess.run(cmd, check=True, capture_output=True)
     except subprocess.CalledProcessError as e:
         raise ExportError(f"pandoc failed: {e.stderr.decode('utf-8', 'replace')}") from e
     finally:
@@ -101,7 +100,7 @@ def _export_docx_python(markdown_text: str, title: str, out_path: Path) -> Path:
     return out_path
 
 
-def export_hwp(markdown_text: str, title: str, out_path: Path) -> Path:
+def export_hwp(markdown_text: str, title: str, out_path: Path, reference_docx: Path | None = None) -> Path:
     """Two-step: markdown → DOCX → HWP via LibreOffice."""
     if not shutil.which("libreoffice") and not shutil.which("soffice"):
         raise ExportError(
@@ -113,7 +112,7 @@ def export_hwp(markdown_text: str, title: str, out_path: Path) -> Path:
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
         docx_path = tmp_path / "intermediate.docx"
-        export_docx(markdown_text, title, docx_path)
+        export_docx(markdown_text, title, docx_path, reference_docx=reference_docx)
         try:
             subprocess.run(
                 [soffice, "--headless", "--convert-to", "hwp", "--outdir", str(tmp_path), str(docx_path)],

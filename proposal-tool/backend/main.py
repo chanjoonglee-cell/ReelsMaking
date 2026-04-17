@@ -262,6 +262,54 @@ async def api_regenerate(session_id: str, index: int):
     return {"content": content, "draft": draft}
 
 
+def _template_reference_docx(meta: dict[str, Any], session_id: str) -> Path | None:
+    """Pick an uploaded template file and, if needed, convert it to DOCX so it
+    can be used as a pandoc --reference-doc for style inheritance.
+
+    Returns None if no usable template is available.
+    """
+    templates_ = meta.get("templates", [])
+    if not templates_:
+        return None
+
+    soffice = None  # lazy lookup
+
+    cache_dir = storage.session_dir(session_id) / "cache"
+    cache_dir.mkdir(exist_ok=True)
+
+    for t in templates_:
+        p = Path(t["path"])
+        if not p.exists():
+            continue
+        suffix = p.suffix.lower()
+        if suffix == ".docx":
+            return p
+        if suffix in {".hwp", ".hwpx", ".doc"}:
+            cached = cache_dir / f"{p.stem}.reference.docx"
+            if cached.exists():
+                return cached
+            if soffice is None:
+                import shutil as _sh
+                soffice = _sh.which("libreoffice") or _sh.which("soffice")
+            if not soffice:
+                continue
+            try:
+                import subprocess as _sp
+                _sp.run(
+                    [soffice, "--headless", "--convert-to", "docx", "--outdir", str(cache_dir), str(p)],
+                    check=True,
+                    capture_output=True,
+                    timeout=120,
+                )
+            except Exception:
+                continue
+            produced = cache_dir / f"{p.stem}.docx"
+            if produced.exists():
+                produced.rename(cached)
+                return cached
+    return None
+
+
 # ───── export ─────
 @app.get("/api/sessions/{session_id}/export/{fmt}")
 async def api_export(session_id: str, fmt: str):
@@ -276,16 +324,17 @@ async def api_export(session_id: str, fmt: str):
     out_dir.mkdir(exist_ok=True)
 
     safe_title = "".join(c if c.isalnum() or c in " -_가-힣" else "_" for c in title).strip() or session_id
+    reference = _template_reference_docx(meta, session_id)
 
     try:
         if fmt == "pdf":
             out = exporters.export_pdf(markdown_text, title, out_dir / f"{safe_title}.pdf")
             media = "application/pdf"
         elif fmt == "docx":
-            out = exporters.export_docx(markdown_text, title, out_dir / f"{safe_title}.docx")
+            out = exporters.export_docx(markdown_text, title, out_dir / f"{safe_title}.docx", reference_docx=reference)
             media = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         elif fmt == "hwp":
-            out = exporters.export_hwp(markdown_text, title, out_dir / f"{safe_title}.hwp")
+            out = exporters.export_hwp(markdown_text, title, out_dir / f"{safe_title}.hwp", reference_docx=reference)
             media = "application/x-hwp"
         else:
             raise HTTPException(400, f"Unknown format: {fmt}")
