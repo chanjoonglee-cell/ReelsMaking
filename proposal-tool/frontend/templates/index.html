@@ -35,6 +35,16 @@
       </div>
     </section>
 
+    <section class="mb-6">
+      <h2 class="font-semibold text-lg mb-2">③ 이미지 <span class="text-xs font-normal text-slate-400">(선택 · 원본 PDF 안의 이미지는 자동 추출됨)</span></h2>
+      <div id="dz-images" class="dropzone" data-kind="imageFiles">
+        <p class="text-slate-500">팀 사진, 제품 스크린샷, 그래프 등</p>
+        <p class="text-xs text-slate-400 mt-2">PNG / JPG / JPEG / WEBP · 여러 파일 OK</p>
+        <input type="file" multiple class="hidden" accept="image/*" />
+        <ul class="file-list mt-3 text-sm text-left"></ul>
+      </div>
+    </section>
+
     <div class="flex items-center gap-3 mb-8">
       <input id="name" type="text" placeholder="세션 이름 (선택)" class="flex-1 px-3 py-2 border border-slate-300 rounded-md">
       <button id="btn-generate" class="px-5 py-2.5 rounded-md bg-slate-900 text-white font-medium disabled:opacity-50">

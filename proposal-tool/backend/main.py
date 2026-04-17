@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Streamin
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from . import images as image_utils
 from . import llm_client, config, exporters, parsers, storage
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -87,6 +88,41 @@ def _extract_template_text(template_files: list[dict[str, str]]) -> str:
     return "\n\n".join(parts)
 
 
+def _extract_pdf_images(session_id: str, source_files: list[dict[str, str]]) -> list[dict[str, Any]]:
+    """Pull embedded images out of every source PDF into session images/."""
+    out_dir = storage.session_dir(session_id) / "images"
+    counter = 0
+    # Preserve any already-uploaded user images so we don't collide with their counter.
+    existing = storage.load_images_meta(session_id)
+    counter = sum(1 for e in existing if e["id"].startswith("img_pdf_"))
+    all_images: list[dict[str, Any]] = list(existing)
+    for f in source_files:
+        path = Path(f["path"])
+        if path.suffix.lower() != ".pdf":
+            continue
+        try:
+            extracted = image_utils.extract_from_pdf(path, out_dir, counter_start=counter)
+        except Exception:
+            continue
+        counter += len(extracted)
+        all_images.extend(extracted)
+    return all_images
+
+
+async def _caption_all(session_id: str, images: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Assign a short Korean caption to every image without one yet."""
+    out_dir = storage.session_dir(session_id) / "images"
+    pending = [img for img in images if not img.get("caption")]
+    if not pending:
+        return images
+    paths = [out_dir / img["filename"] for img in pending]
+    captions = await llm_client.caption_images_batch(paths)
+    for img, cap in zip(pending, captions):
+        img["caption"] = cap
+    # Drop images the captioner said are decorative/empty.
+    return [img for img in images if img.get("caption", "").strip() != "(무의미)"]
+
+
 async def _run_pipeline(session_id: str, saved_sources: list[dict[str, str]], saved_templates: list[dict[str, str]]) -> None:
     """Parse uploaded files (in a thread) then run generation."""
     try:
@@ -94,12 +130,24 @@ async def _run_pipeline(session_id: str, saved_sources: list[dict[str, str]], sa
         loop = asyncio.get_running_loop()
         source_chunks = await loop.run_in_executor(None, _extract_source_chunks, saved_sources)
         template_text = await loop.run_in_executor(None, _extract_template_text, saved_templates)
-        await _run_generation(session_id, source_chunks, template_text)
+
+        await _emit(session_id, {"stage": "extract_images", "message": "이미지 추출 중..."})
+        images = await loop.run_in_executor(None, _extract_pdf_images, session_id, saved_sources)
+        if images:
+            await _emit(session_id, {
+                "stage": "caption_images",
+                "message": f"이미지 {len(images)}개 캡션 생성 중...",
+                "count": len(images),
+            })
+            images = await _caption_all(session_id, images)
+            storage.save_images_meta(session_id, images)
+
+        await _run_generation(session_id, source_chunks, template_text, images)
     except Exception as e:
         await _emit(session_id, {"stage": "error", "message": str(e)})
 
 
-async def _run_generation(session_id: str, source_chunks: list[dict[str, str]], template_text: str) -> None:
+async def _run_generation(session_id: str, source_chunks: list[dict[str, str]], template_text: str, images: list[dict[str, Any]] | None = None) -> None:
     try:
         await _emit(session_id, {"stage": "parse_template", "message": "양식 파싱 중..."})
         outline = await llm_client.parse_template(template_text)
@@ -130,7 +178,7 @@ async def _run_generation(session_id: str, source_chunks: list[dict[str, str]], 
             async with semaphore:
                 await _emit(session_id, {"stage": "section_start", "index": idx, "title": section["title"]})
                 try:
-                    content = await llm_client.generate_section(section, source_chunks)
+                    content = await llm_client.generate_section(section, source_chunks, images)
                 except Exception as e:
                     content = f"_(생성 실패: {e})_"
                 results[idx]["content"] = content
@@ -169,6 +217,7 @@ async def _run_generation(session_id: str, source_chunks: list[dict[str, str]], 
 async def create_session(
     sources: list[UploadFile] = File(...),
     templates_: list[UploadFile] = File(..., alias="templates"),
+    images: list[UploadFile] | None = File(None),
     name: str = Form(""),
 ):
     if not sources or not templates_:
@@ -178,6 +227,19 @@ async def create_session(
     sdir = storage.session_dir(session_id)
     saved_sources = await _save_uploads(sources, sdir / "sources")
     saved_templates = await _save_uploads(templates_, sdir / "templates")
+
+    # Pre-save user-uploaded images before the pipeline starts, so PDF-extracted
+    # images can be merged with them in the same images/ folder.
+    user_images_meta: list[dict[str, Any]] = []
+    if images:
+        img_dir = sdir / "images"
+        for i, uf in enumerate(images, start=1):
+            if not uf.filename:
+                continue
+            data = await uf.read()
+            user_images_meta.append(image_utils.save_uploaded_image(data, uf.filename, img_dir, i))
+        if user_images_meta:
+            storage.save_images_meta(session_id, user_images_meta)
 
     meta = {
         "name": name or session_id,
@@ -197,6 +259,18 @@ async def create_session(
     return {"session_id": session_id}
 
 
+@app.get("/api/sessions/{session_id}/images/{filename}")
+async def api_image(session_id: str, filename: str):
+    """Serve a single image from a session's images/ folder."""
+    # Prevent path traversal.
+    if "/" in filename or ".." in filename:
+        raise HTTPException(400, "invalid filename")
+    path = storage.session_dir(session_id) / "images" / filename
+    if not path.exists():
+        raise HTTPException(404, "image not found")
+    return FileResponse(str(path))
+
+
 @app.get("/api/sessions")
 async def api_list_sessions():
     return {"sessions": storage.list_sessions()}
@@ -208,7 +282,12 @@ async def api_get_session(session_id: str):
         meta = storage.load_meta(session_id)
     except FileNotFoundError:
         raise HTTPException(404, "Session not found")
-    return {"meta": meta, "draft": storage.load_draft(session_id), "sections": storage.load_sections(session_id)}
+    return {
+        "meta": meta,
+        "draft": storage.load_draft(session_id),
+        "sections": storage.load_sections(session_id),
+        "images": storage.load_images_meta(session_id),
+    }
 
 
 @app.delete("/api/sessions/{session_id}")
@@ -252,7 +331,8 @@ async def api_regenerate(session_id: str, index: int):
         raise HTTPException(400, "섹션 인덱스가 잘못되었습니다.")
 
     source_chunks = _extract_source_chunks(meta.get("sources", []))
-    content = await llm_client.generate_section(sections[index], source_chunks)
+    images = storage.load_images_meta(session_id)
+    content = await llm_client.generate_section(sections[index], source_chunks, images)
     sections[index]["content"] = content
     storage.save_sections(session_id, sections)
 
@@ -331,10 +411,16 @@ async def api_export(session_id: str, fmt: str):
             out = exporters.export_pdf(markdown_text, title, out_dir / f"{safe_title}.pdf")
             media = "application/pdf"
         elif fmt == "docx":
-            out = exporters.export_docx(markdown_text, title, out_dir / f"{safe_title}.docx", reference_docx=reference)
+            out = exporters.export_docx(
+                markdown_text, title, out_dir / f"{safe_title}.docx",
+                reference_docx=reference, resource_dir=sdir,
+            )
             media = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         elif fmt == "hwp":
-            out = exporters.export_hwp(markdown_text, title, out_dir / f"{safe_title}.hwp", reference_docx=reference)
+            out = exporters.export_hwp(
+                markdown_text, title, out_dir / f"{safe_title}.hwp",
+                reference_docx=reference, resource_dir=sdir,
+            )
             media = "application/x-hwp"
         else:
             raise HTTPException(400, f"Unknown format: {fmt}")

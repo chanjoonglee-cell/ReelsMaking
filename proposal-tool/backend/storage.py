@@ -28,7 +28,20 @@ def session_dir(session_id: str) -> Path:
     path.mkdir(parents=True, exist_ok=True)
     (path / "sources").mkdir(exist_ok=True)
     (path / "templates").mkdir(exist_ok=True)
+    (path / "images").mkdir(exist_ok=True)
     return path
+
+
+def save_images_meta(session_id: str, images: list[dict[str, Any]]) -> None:
+    path = session_dir(session_id) / "images.json"
+    path.write_text(json.dumps(images, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def load_images_meta(session_id: str) -> list[dict[str, Any]]:
+    path = session_dir(session_id) / "images.json"
+    if not path.exists():
+        return []
+    return json.loads(path.read_text("utf-8"))
 
 
 def list_sessions() -> list[dict[str, Any]]:

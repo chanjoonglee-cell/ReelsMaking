@@ -1,4 +1,4 @@
-const state = { sources: [], templates: [] };
+const state = { sources: [], templates: [], imageFiles: [] };
 
 function setupDropzone(dz) {
   const kind = dz.dataset.kind;
@@ -83,6 +83,7 @@ document.getElementById("btn-generate").addEventListener("click", async () => {
   const fd = new FormData();
   state.sources.forEach((f) => fd.append("sources", f));
   state.templates.forEach((f) => fd.append("templates", f));
+  state.imageFiles.forEach((f) => fd.append("images", f));
   fd.append("name", document.getElementById("name").value);
 
   let sessionId;
@@ -113,6 +114,8 @@ document.getElementById("btn-generate").addEventListener("click", async () => {
   es.onmessage = (ev) => {
     const data = JSON.parse(ev.data);
     if (data.stage === "parse_files") push("업로드한 파일 파싱 중…");
+    else if (data.stage === "extract_images") push("이미지 추출 중…");
+    else if (data.stage === "caption_images") push(`이미지 ${data.count}개 캡션 생성 중…`);
     else if (data.stage === "parse_template") push("양식 파싱 중…");
     else if (data.stage === "outline_ready") push(`섹션 ${data.sections.length}개 발견`);
     else if (data.stage === "section_start") push(`  섹션 ${data.index + 1} 생성 시작: ${data.title}`);

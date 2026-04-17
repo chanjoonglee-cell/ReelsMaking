@@ -1,7 +1,10 @@
 """Async wrapper over the OpenAI SDK for template parsing and section drafting."""
 from __future__ import annotations
 
+import asyncio
+import base64
 import json
+from pathlib import Path
 from typing import Any
 
 from openai import AsyncOpenAI
@@ -55,6 +58,13 @@ PEOPLE / TEAM — 특별히 엄격하게 지킬 것:
 - 원본에 대표자 이름이 명확히 표시되어 있지 않으면 `[확인 필요: 대표자 이름]` 으로 표기. 아무나 대표로 추정해서 쓰지 말 것.
 - "팀 구성" / "Team" / "About us" / "대표" / "Founder" / "CEO" / "CTO" 등의 키워드 주변 문맥만 근거로 삼고, 다른 섹션의 등장인물을 팀원으로 오해하지 말 것.
 
+이미지 사용:
+- "사용 가능한 이미지 목록" 이 제공되면, 섹션 내용과 **명백히 관련 있는** 이미지만 본문에 삽입한다.
+- 삽입 형식은 정확히 `![간단한 한국어 캡션](images/파일명.png)` Markdown 문법.
+- 목표는 문단 1개당 이미지 1장 수준. 억지로 끼워넣지 말고, 관련 없으면 넣지 말 것.
+- 같은 이미지를 한 섹션에서 여러 번 삽입하지 말 것.
+- 목록에 없는 파일명을 지어내지 말 것 — 반드시 제공된 목록의 파일명만 사용.
+
 서식:
 - Match the section's guidance and 글자/페이지 제약 as closely as possible.
 - Produce Markdown. Use `##` for internal headings inside the section if helpful, and bullet lists / tables where appropriate.
@@ -62,6 +72,13 @@ PEOPLE / TEAM — 특별히 엄격하게 지킬 것:
 - Do NOT include the section title at the top — the editor adds it.
 - At the end, append a line beginning with `<!-- refs: ` listing the 원본 file names you drew from, e.g. `<!-- refs: ir_deck.pdf, 2024_사업계획서.docx -->`.
 """
+
+
+IMAGE_CAPTION_SYSTEM = """You describe images concisely in Korean so they can be cited from a 사업계획서 (Korean government grant proposal).
+
+Return exactly ONE short Korean sentence (≤40자) describing WHAT the image shows at a high level — e.g. "앱 메인 화면 스크린샷", "D30 리텐션 그래프", "팀 구성 다이어그램", "타겟 고객 페르소나 표". Skip decorative/empty images — if an image has no meaningful content respond with `(무의미)`.
+
+No extra prose, no quotes, just the caption (or `(무의미)`)."""
 
 
 async def parse_template(template_text: str) -> dict[str, Any]:
@@ -88,15 +105,26 @@ async def parse_template(template_text: str) -> dict[str, Any]:
 async def generate_section(
     section: dict[str, Any],
     source_chunks: list[dict[str, str]],
+    images: list[dict[str, Any]] | None = None,
 ) -> str:
     source_block = "\n\n".join(
         f"=== 원본 파일: {c['name']} ===\n{c['text']}" for c in source_chunks
     )
+    images_block = ""
+    if images:
+        lines = ["# 사용 가능한 이미지 목록 (섹션과 관련 있는 것만 문단 사이에 Markdown 이미지로 삽입)"]
+        for img in images:
+            cap = img.get("caption") or "(캡션 없음)"
+            origin = f" (출처: {img['source']}" + (f", p.{img['page']}" if img.get("page") else "") + ")"
+            lines.append(f"- images/{img['filename']} — {cap}{origin}")
+        images_block = "\n".join(lines) + "\n"
+
     user = (
         f"# 섹션 제목\n{section['title']}\n\n"
         f"# 섹션 안내\n{section.get('guidance') or '(안내 없음)'}\n\n"
         f"# 글자/페이지 제약\n{section.get('char_limit') or '(명시 없음)'}\n\n"
-        f"# 원본 자료\n{source_block[:150_000]}\n"
+        f"# 원본 자료\n{source_block[:150_000]}\n\n"
+        f"{images_block}"
     )
     resp = await client().chat.completions.create(
         model=config.MODEL,
@@ -107,3 +135,38 @@ async def generate_section(
         ],
     )
     return (resp.choices[0].message.content or "").strip()
+
+
+async def caption_image(image_path: Path) -> str:
+    """Generate a short Korean caption for a single image using Vision."""
+    suffix = image_path.suffix.lstrip(".").lower() or "png"
+    mime = "image/jpeg" if suffix in {"jpg", "jpeg"} else f"image/{suffix}"
+    b64 = base64.b64encode(image_path.read_bytes()).decode("ascii")
+    resp = await client().chat.completions.create(
+        model=config.MODEL,
+        max_tokens=120,
+        messages=[
+            {"role": "system", "content": IMAGE_CAPTION_SYSTEM},
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "이 이미지의 한국어 캡션 1문장."},
+                    {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}},
+                ],
+            },
+        ],
+    )
+    return (resp.choices[0].message.content or "").strip()
+
+
+async def caption_images_batch(image_paths: list[Path], concurrency: int = 4) -> list[str]:
+    sem = asyncio.Semaphore(concurrency)
+
+    async def one(p: Path) -> str:
+        async with sem:
+            try:
+                return await caption_image(p)
+            except Exception as e:
+                return f"(캡션 실패: {e})"
+
+    return await asyncio.gather(*(one(p) for p in image_paths))

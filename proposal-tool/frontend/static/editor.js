@@ -2,6 +2,7 @@ const SESSION_ID = window.SESSION_ID;
 
 let easymde;
 let sections = [];
+let sessionImages = [];
 let saveTimer = null;
 
 async function loadSession() {
@@ -9,8 +10,18 @@ async function loadSession() {
   if (!resp.ok) throw new Error(await resp.text());
   const data = await resp.json();
   sections = data.sections || [];
+  sessionImages = data.images || [];
   document.getElementById("title").textContent = data.meta.title || SESSION_ID;
   return data;
+}
+
+// Rewrite relative image URLs in markdown so the preview (which runs at
+// /editor/{id}) can fetch them from the session image endpoint.
+function rewriteImageUrls(markdown) {
+  return markdown.replace(
+    /!\[([^\]]*)\]\(images\/([^)]+)\)/g,
+    (_m, alt, name) => `![${alt}](/api/sessions/${SESSION_ID}/images/${name})`,
+  );
 }
 
 function mount(initialMarkdown) {
@@ -26,7 +37,7 @@ function mount(initialMarkdown) {
       "preview", "side-by-side", "|",
       "guide",
     ],
-    previewRender: (plain) => marked.parse(plain, { breaks: true }),
+    previewRender: (plain) => marked.parse(rewriteImageUrls(plain), { breaks: true }),
     status: ["lines", "words", "cursor"],
   });
   // Force side-by-side view for split pane feel.
@@ -146,11 +157,45 @@ document.querySelectorAll(".btn-export").forEach((btn) => {
   });
 });
 
+function renderImageList() {
+  const ul = document.getElementById("image-list");
+  ul.innerHTML = "";
+  if (!sessionImages.length) {
+    const li = document.createElement("li");
+    li.className = "col-span-2 text-xs text-slate-400";
+    li.textContent = "(이미지 없음)";
+    ul.appendChild(li);
+    return;
+  }
+  sessionImages.forEach((img) => {
+    const li = document.createElement("li");
+    li.className = "image-tile";
+    li.title = img.caption || img.filename;
+    li.innerHTML = `
+      <img src="/api/sessions/${SESSION_ID}/images/${img.filename}" alt="${img.caption || ""}">
+      <div class="image-tile-caption">${img.caption || img.filename}</div>
+    `;
+    li.onclick = () => insertImage(img);
+    ul.appendChild(li);
+  });
+}
+
+function insertImage(img) {
+  const cm = easymde.codemirror;
+  const cursor = cm.getCursor();
+  const alt = (img.caption || img.filename).replace(/[\[\]]/g, "");
+  const md = `\n\n![${alt}](images/${img.filename})\n\n`;
+  cm.replaceRange(md, cursor);
+  cm.focus();
+  markDirty();
+}
+
 (async () => {
   try {
     const data = await loadSession();
     mount(data.draft || "");
     renderSectionList();
+    renderImageList();
   } catch (e) {
     document.body.innerHTML = `<div style="padding:2rem">세션 로드 실패: ${e.message}</div>`;
   }
