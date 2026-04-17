@@ -15,22 +15,38 @@ from pathlib import Path
 import markdown as md_lib
 
 
-_IMG_RE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
+_IMG_RE = re.compile(r"!\[([^\]]*)\]\(([^)\s]+)\)(\{[^}]*\})?")
 _UNSAFE_ALT = re.compile(r"[\[\]()\"'`:]|\s+")
 
+# A4 본문 폭 ≈ 16cm (21cm - 양쪽 2.5cm 여백). 14cm 로 조금 더 안전하게 cap.
+IMAGE_MAX_WIDTH = "14cm"
 
-def _sanitize_image_alt(markdown_text: str) -> str:
-    """Drop characters pandoc chokes on inside the image alt text.
 
-    Any `[`, `]`, `(`, `)`, quotes, colons and whitespace runs are replaced
-    with a single space. The URL half of the image is untouched.
+def _prepare_images_for_export(markdown_text: str) -> str:
+    """Sanitize image alt text and cap the rendered width.
+
+    Without this each slide-as-image happily consumes a full A4 page, which
+    is what made a "12장 내외" brief balloon to 146 pages.
     """
     def repl(m: "re.Match[str]") -> str:
         alt = _UNSAFE_ALT.sub(" ", m.group(1)).strip()
         if len(alt) > 40:
             alt = alt[:40]
-        return f"![{alt}]({m.group(2)})"
+        url = m.group(2)
+        existing = m.group(3) or ""
+        if "width" in existing:
+            return f"![{alt}]({url}){existing}"
+        # Inject width inside existing attrs, or add a fresh attr block.
+        if existing:
+            new_attrs = existing[:-1] + f' width="{IMAGE_MAX_WIDTH}"' + "}"
+        else:
+            new_attrs = f'{{width="{IMAGE_MAX_WIDTH}"}}'
+        return f"![{alt}]({url}){new_attrs}"
     return _IMG_RE.sub(repl, markdown_text)
+
+
+# Kept as a thin alias so old callers still work.
+_sanitize_image_alt = _prepare_images_for_export
 
 
 class ExportError(Exception):
@@ -50,6 +66,7 @@ HTML_TEMPLATE = """<!doctype html>
   code {{ background: #f4f4f4; padding: 1px 4px; border-radius: 3px; }}
   pre {{ background: #f4f4f4; padding: 8pt; border-radius: 4px; }}
   blockquote {{ border-left: 3px solid #ccc; margin: 8pt 0; padding-left: 10pt; color: #555; }}
+  img {{ max-width: 14cm; height: auto; display: block; margin: 8pt auto; page-break-inside: avoid; }}
 </style></head><body>
 {body}
 </body></html>"""
@@ -66,7 +83,10 @@ def _markdown_to_html(markdown_text: str, title: str) -> str:
 def export_pdf(markdown_text: str, title: str, out_path: Path, resource_dir: Path | None = None) -> Path:
     from weasyprint import HTML
 
-    markdown_text = _sanitize_image_alt(markdown_text)
+    markdown_text = _prepare_images_for_export(markdown_text)
+    # python-markdown ignores pandoc-style `{width=...}` attrs. Strip them
+    # and rely on the stylesheet's `img { max-width: ... }` rule instead.
+    markdown_text = re.sub(r"(\!\[[^\]]*\]\([^)\s]+\))\{[^}]*\}", r"\1", markdown_text)
     html = _markdown_to_html(markdown_text, title)
     # base_url lets WeasyPrint resolve relative image paths like `images/xxx.png`
     # against the session directory.
@@ -82,7 +102,7 @@ def export_docx(markdown_text: str, title: str, out_path: Path, reference_docx: 
 
 
 def _export_docx_pandoc(markdown_text: str, out_path: Path, reference_docx: Path | None = None, resource_dir: Path | None = None) -> Path:
-    markdown_text = _sanitize_image_alt(markdown_text)
+    markdown_text = _prepare_images_for_export(markdown_text)
     # Write the .md inside the resource_dir (if given) so pandoc resolves
     # relative image paths like `images/img_pdf_003.png` against it.
     if resource_dir:

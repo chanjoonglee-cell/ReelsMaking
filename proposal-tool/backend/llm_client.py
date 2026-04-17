@@ -26,19 +26,21 @@ def client() -> AsyncOpenAI:
 
 TEMPLATE_PARSE_SYSTEM = """You extract the outline of a Korean government-grant proposal template.
 
-Given the announcement + template text, return a JSON object describing every section the applicant must fill in.
+Given the announcement + template text, return a JSON object describing every section the applicant must fill in, plus the overall length constraint for the whole document.
 
 Rules:
 - Preserve the original section titles and numbering exactly as they appear (Korean text is fine).
 - Flatten sub-sections into separate entries — one entry per thing the applicant writes.
-- For `char_limit`, extract any stated page/character/line limit (e.g. "2페이지 이내", "500자 이내"). Use null if none.
+- For `char_limit`, extract any stated page/character/line limit for THAT section (e.g. "2페이지 이내", "500자 이내"). Use null if none.
 - For `guidance`, copy the short instruction sentence(s) that tell the applicant what to write. Keep it short (≤3 sentences).
+- For `overall_limit`, copy the length constraint of the WHOLE document if stated (e.g. "본문 12장 내외", "A4 15매 이내"). Use null if not stated.
 - Do not invent sections that are not present.
 - Return ONLY JSON. No prose, no code fences.
 
 Schema:
 {
   "title": "전체 사업계획서 제목",
+  "overall_limit": "본문 12장 내외" ,
   "sections": [
     {"id": "s1", "title": "1. 문제 인식 (Problem)", "guidance": "...", "char_limit": "2페이지 이내"}
   ]
@@ -62,9 +64,14 @@ PEOPLE / TEAM — 특별히 엄격하게 지킬 것:
 - "사용 가능한 이미지 목록" 이 제공되면, 섹션 내용과 **명백히 관련 있는** 이미지만 본문에 삽입한다.
 - 삽입 형식은 정확히 `![간단한 한국어 캡션](images/파일명.png)` Markdown 문법.
 - alt 텍스트(대괄호 `[...]` 안) 는 **한글·숫자·공백만** 사용. 대괄호, 소괄호, 따옴표, 콜론, 마크다운 기호, 줄바꿈 금지. 길이 ≤30자.
-- 목표는 문단 1개당 이미지 1장 수준. 억지로 끼워넣지 말고, 관련 없으면 넣지 말 것.
+- **한 섹션당 이미지는 최대 1~2장**. 글로 설명하는 걸 우선하고, 이미지는 핵심을 압축해주는 시각자료만 1장 골라 삽입.
 - 같은 이미지를 한 섹션에서 여러 번 삽입하지 말 것.
 - 목록에 없는 파일명을 지어내지 말 것 — 반드시 제공된 목록의 파일명만 사용.
+
+분량:
+- 섹션의 `글자/페이지 제약` 을 **엄격히** 준수한다. "2페이지 이내" 면 이미지 포함해서 2페이지 넘기지 말 것.
+- 전체 문서 분량 제한이 주어지면, 그 한계 안에서 이 섹션이 차지해야 할 몫만 쓴다.
+- 길게 쓰는 것보다 핵심 근거·숫자 위주로 압축하는 것이 더 높은 평가를 받는다.
 
 서식:
 - Match the section's guidance and 글자/페이지 제약 as closely as possible.
@@ -116,6 +123,7 @@ async def generate_section(
     section: dict[str, Any],
     source_chunks: list[dict[str, str]],
     images: list[dict[str, Any]] | None = None,
+    overall_limit: str | None = None,
 ) -> str:
     source_block = "\n\n".join(
         f"=== 원본 파일: {c['name']} ===\n{c['text']}" for c in source_chunks
@@ -133,6 +141,7 @@ async def generate_section(
         f"# 섹션 제목\n{section['title']}\n\n"
         f"# 섹션 안내\n{section.get('guidance') or '(안내 없음)'}\n\n"
         f"# 글자/페이지 제약\n{section.get('char_limit') or '(명시 없음)'}\n\n"
+        f"# 전체 문서 분량 제한\n{overall_limit or '(명시 없음)'}\n\n"
         f"# 원본 자료\n{source_block[:150_000]}\n\n"
         f"{images_block}"
     )

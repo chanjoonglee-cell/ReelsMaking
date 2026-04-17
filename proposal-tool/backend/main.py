@@ -166,10 +166,16 @@ async def _run_generation(session_id: str, source_chunks: list[dict[str, str]], 
         outline = await llm_client.parse_template(template_text)
         sections: list[dict[str, Any]] = outline.get("sections", [])
         title = outline.get("title") or "사업계획서 초안"
+        overall_limit = outline.get("overall_limit")
 
         meta = storage.load_meta(session_id)
         meta["title"] = title
-        meta["outline"] = {"title": title, "sections": [{k: s.get(k) for k in ("id", "title", "guidance", "char_limit")} for s in sections]}
+        meta["overall_limit"] = overall_limit
+        meta["outline"] = {
+            "title": title,
+            "overall_limit": overall_limit,
+            "sections": [{k: s.get(k) for k in ("id", "title", "guidance", "char_limit")} for s in sections],
+        }
         meta["status"] = "generating"
         meta["progress"] = {"total": len(sections), "done": 0}
         storage.save_meta(session_id, meta)
@@ -191,7 +197,7 @@ async def _run_generation(session_id: str, source_chunks: list[dict[str, str]], 
             async with semaphore:
                 await _emit(session_id, {"stage": "section_start", "index": idx, "title": section["title"]})
                 try:
-                    content = await llm_client.generate_section(section, source_chunks, images)
+                    content = await llm_client.generate_section(section, source_chunks, images, overall_limit)
                 except Exception as e:
                     content = f"_(생성 실패: {e})_"
                 results[idx]["content"] = content
@@ -345,7 +351,8 @@ async def api_regenerate(session_id: str, index: int):
 
     source_chunks = _extract_source_chunks(meta.get("sources", []))
     images = storage.load_images_meta(session_id)
-    content = await llm_client.generate_section(sections[index], source_chunks, images)
+    overall_limit = meta.get("overall_limit")
+    content = await llm_client.generate_section(sections[index], source_chunks, images, overall_limit)
     sections[index]["content"] = content
     storage.save_sections(session_id, sections)
 
