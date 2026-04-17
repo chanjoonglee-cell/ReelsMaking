@@ -74,3 +74,56 @@
   cursor: pointer;
 }
 #section-list .regen:hover { color: #0f172a; }
+#section-list .regen:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ───── loading banner + spinner ───── */
+.regen-banner {
+  position: sticky;
+  top: 56px;
+  z-index: 5;
+  background: #fef3c7;
+  border-bottom: 1px solid #fcd34d;
+  padding: 8px 24px;
+  font-size: 0.875rem;
+  color: #713f12;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.regen-banner.hidden { display: none; }
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #f59e0b;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.export-spinner {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border: 2px solid #64748b;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  vertical-align: middle;
+}
+
+/* bigger, more obvious progress bar on home page */
+#progress-bar { background: linear-gradient(90deg, #0f172a, #334155); }
+#progress { position: relative; }
+#progress.active::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.04), transparent);
+  background-size: 200% 100%;
+  animation: sweep 1.6s linear infinite;
+  pointer-events: none;
+  border-radius: 0.5rem;
+}
+@keyframes sweep { from { background-position: 200% 0; } to { background-position: -200% 0; } }

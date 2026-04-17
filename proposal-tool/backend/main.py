@@ -291,5 +291,13 @@ async def api_export(session_id: str, fmt: str):
             raise HTTPException(400, f"Unknown format: {fmt}")
     except exporters.ExportError as e:
         return JSONResponse({"error": str(e)}, status_code=500)
+    except ImportError as e:
+        hint = (
+            "PDF 내보내기는 WeasyPrint 와 네이티브 라이브러리(pango, cairo, gdk-pixbuf)가 필요합니다. "
+            "macOS: `brew install pango cairo gdk-pixbuf libffi`"
+        ) if fmt == "pdf" else ""
+        return JSONResponse({"error": f"{type(e).__name__}: {e}\n\n{hint}".strip()}, status_code=500)
+    except Exception as e:
+        return JSONResponse({"error": f"{type(e).__name__}: {e}"}, status_code=500)
 
     return FileResponse(str(out), media_type=media, filename=out.name)

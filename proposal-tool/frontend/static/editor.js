@@ -90,7 +90,16 @@ function jumpToSection(title) {
 
 async function regenerate(index) {
   if (!confirm(`"${sections[index].title}" 섹션을 다시 생성할까요?`)) return;
+
+  const banner = document.getElementById("regen-banner");
+  const bannerText = document.getElementById("regen-banner-text");
+  bannerText.textContent = `재생성 중: ${sections[index].title}`;
+  banner.classList.remove("hidden");
+
+  const regenButtons = document.querySelectorAll("#section-list .regen");
+  regenButtons.forEach((b) => (b.disabled = true));
   document.getElementById("save-status").textContent = "재생성 중…";
+
   try {
     const resp = await fetch(`/api/sessions/${SESSION_ID}/sections/${index}/regenerate`, { method: "POST" });
     if (!resp.ok) throw new Error(await resp.text());
@@ -100,6 +109,9 @@ async function regenerate(index) {
     document.getElementById("save-status").textContent = "저장됨";
   } catch (e) {
     alert("재생성 실패: " + e.message);
+  } finally {
+    banner.classList.add("hidden");
+    regenButtons.forEach((b) => (b.disabled = false));
   }
 }
 
@@ -107,22 +119,30 @@ document.querySelectorAll(".btn-export").forEach((btn) => {
   btn.addEventListener("click", async () => {
     await save();
     const fmt = btn.dataset.fmt;
-    const url = `/api/sessions/${SESSION_ID}/export/${fmt}`;
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({ error: resp.statusText }));
-      alert(`${fmt.toUpperCase()} 내보내기 실패: ${err.error || resp.statusText}`);
-      return;
+    const originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="export-spinner"></span> ${fmt.toUpperCase()}…`;
+    try {
+      const url = `/api/sessions/${SESSION_ID}/export/${fmt}`;
+      const resp = await fetch(url);
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: resp.statusText }));
+        alert(`${fmt.toUpperCase()} 내보내기 실패:\n\n${err.error || resp.statusText}`);
+        return;
+      }
+      const blob = await resp.blob();
+      const disposition = resp.headers.get("content-disposition") || "";
+      const match = /filename\*?=(?:UTF-8'')?"?([^";]+)/i.exec(disposition);
+      const filename = match ? decodeURIComponent(match[1]) : `proposal.${fmt}`;
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalLabel;
     }
-    const blob = await resp.blob();
-    const disposition = resp.headers.get("content-disposition") || "";
-    const match = /filename\*?=(?:UTF-8'')?"?([^";]+)/i.exec(disposition);
-    const filename = match ? decodeURIComponent(match[1]) : `proposal.${fmt}`;
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(a.href);
   });
 });
 
