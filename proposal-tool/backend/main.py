@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
@@ -217,7 +217,7 @@ async def _run_generation(session_id: str, source_chunks: list[dict[str, str]], 
 async def create_session(
     sources: list[UploadFile] = File(...),
     templates_: list[UploadFile] = File(..., alias="templates"),
-    images: list[UploadFile] | None = File(None),
+    images: Optional[list[UploadFile]] = File(None),
     name: str = Form(""),
 ):
     if not sources or not templates_:
