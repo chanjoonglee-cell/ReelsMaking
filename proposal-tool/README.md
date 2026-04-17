@@ -1,11 +1,11 @@
 # 정부사업 사업계획서 자동화 (MVP)
 
-원본(IR · 기존 사업계획서) + 양식(공고문 · 계획서 양식) 2개만 업로드하면, Claude Opus 4.7이 섹션별로 초안을 만들고, 마크다운으로 편집한 뒤, HWP/DOCX/PDF로 내보내는 1인용 로컬 웹 도구.
+원본(IR · 기존 사업계획서) + 양식(공고문 · 계획서 양식) 2개만 업로드하면, OpenAI GPT가 섹션별로 초안을 만들고, 마크다운으로 편집한 뒤, HWP/DOCX/PDF로 내보내는 1인용 로컬 웹 도구.
 
 ## 요구사항
 
 - Python 3.10+
-- Anthropic API 키 (`claude-opus-4-7` 접근 권한)
+- OpenAI API 키 (기본 모델: `gpt-4o`. `.env` 의 `PROPOSAL_MODEL` 로 교체 가능)
 - (선택) `pandoc` — 더 정돈된 DOCX 출력을 원할 때
 - (선택) `libreoffice` 또는 `soffice` — HWP 내보내기에 필요
 
@@ -19,7 +19,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 cp .env.example .env
-# .env 파일을 열어 ANTHROPIC_API_KEY를 채우세요.
+# .env 파일을 열어 OPENAI_API_KEY를 채우세요.
 ```
 
 macOS에서 외부 도구:
@@ -64,7 +64,7 @@ proposal-tool/
 │   ├── config.py
 │   ├── storage.py            # 로컬 세션 저장
 │   ├── parsers.py            # PDF/DOCX/PPTX/TXT/MD → 텍스트
-│   ├── claude_client.py      # Claude Opus 4.7 호출
+│   ├── llm_client.py         # OpenAI GPT 호출
 │   └── exporters.py          # markdown → PDF/DOCX/HWP
 ├── frontend/
 │   ├── templates/            # Jinja2 HTML

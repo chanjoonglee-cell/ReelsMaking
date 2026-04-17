@@ -7,8 +7,8 @@ load_dotenv()
 
 ROOT = Path(__file__).resolve().parent.parent
 
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-MODEL = os.getenv("PROPOSAL_MODEL", "claude-opus-4-7")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+MODEL = os.getenv("PROPOSAL_MODEL", "gpt-4o")
 SESSIONS_DIR = Path(os.getenv("SESSIONS_DIR", ROOT / "sessions")).expanduser().resolve()
 HOST = os.getenv("HOST", "127.0.0.1")
 PORT = int(os.getenv("PORT", "8000"))

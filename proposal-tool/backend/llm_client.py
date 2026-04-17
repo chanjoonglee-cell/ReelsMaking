@@ -1,24 +1,23 @@
-"""Async wrapper over the Anthropic SDK for template parsing and section drafting."""
+"""Async wrapper over the OpenAI SDK for template parsing and section drafting."""
 from __future__ import annotations
 
 import json
-import re
 from typing import Any
 
-from anthropic import AsyncAnthropic
+from openai import AsyncOpenAI
 
 from . import config
 
 
-_client: AsyncAnthropic | None = None
+_client: AsyncOpenAI | None = None
 
 
-def client() -> AsyncAnthropic:
+def client() -> AsyncOpenAI:
     global _client
     if _client is None:
-        if not config.ANTHROPIC_API_KEY:
-            raise RuntimeError("ANTHROPIC_API_KEY is not set. Copy .env.example to .env and fill it in.")
-        _client = AsyncAnthropic(api_key=config.ANTHROPIC_API_KEY)
+        if not config.OPENAI_API_KEY:
+            raise RuntimeError("OPENAI_API_KEY is not set. Copy .env.example to .env and fill it in.")
+        _client = AsyncOpenAI(api_key=config.OPENAI_API_KEY)
     return _client
 
 
@@ -57,21 +56,18 @@ Rules:
 """
 
 
-def _strip_code_fence(text: str) -> str:
-    text = text.strip()
-    match = re.match(r"^```(?:json)?\s*(.*?)\s*```$", text, re.DOTALL)
-    return match.group(1).strip() if match else text
-
-
 async def parse_template(template_text: str) -> dict[str, Any]:
-    resp = await client().messages.create(
+    resp = await client().chat.completions.create(
         model=config.MODEL,
         max_tokens=8000,
-        system=TEMPLATE_PARSE_SYSTEM,
-        messages=[{"role": "user", "content": template_text[:120_000]}],
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": TEMPLATE_PARSE_SYSTEM},
+            {"role": "user", "content": template_text[:120_000]},
+        ],
     )
-    raw = "".join(block.text for block in resp.content if block.type == "text")
-    data = json.loads(_strip_code_fence(raw))
+    raw = resp.choices[0].message.content or "{}"
+    data = json.loads(raw)
     sections = data.get("sections") or []
     for i, s in enumerate(sections):
         s.setdefault("id", f"s{i+1}")
@@ -94,10 +90,12 @@ async def generate_section(
         f"# 글자/페이지 제약\n{section.get('char_limit') or '(명시 없음)'}\n\n"
         f"# 원본 자료\n{source_block[:150_000]}\n"
     )
-    resp = await client().messages.create(
+    resp = await client().chat.completions.create(
         model=config.MODEL,
         max_tokens=4000,
-        system=SECTION_DRAFT_SYSTEM,
-        messages=[{"role": "user", "content": user}],
+        messages=[
+            {"role": "system", "content": SECTION_DRAFT_SYSTEM},
+            {"role": "user", "content": user},
+        ],
     )
-    return "".join(block.text for block in resp.content if block.type == "text").strip()
+    return (resp.choices[0].message.content or "").strip()

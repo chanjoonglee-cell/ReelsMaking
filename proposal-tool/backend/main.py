@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Streamin
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import claude_client, config, exporters, parsers, storage
+from . import llm_client, config, exporters, parsers, storage
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -78,7 +78,7 @@ def _extract_source_chunks(source_files: list[dict[str, str]]) -> list[dict[str,
 async def _run_generation(session_id: str, source_chunks: list[dict[str, str]], template_text: str) -> None:
     try:
         await _emit(session_id, {"stage": "parse_template", "message": "양식 파싱 중..."})
-        outline = await claude_client.parse_template(template_text)
+        outline = await llm_client.parse_template(template_text)
         sections: list[dict[str, Any]] = outline.get("sections", [])
         title = outline.get("title") or "사업계획서 초안"
 
@@ -106,7 +106,7 @@ async def _run_generation(session_id: str, source_chunks: list[dict[str, str]], 
             async with semaphore:
                 await _emit(session_id, {"stage": "section_start", "index": idx, "title": section["title"]})
                 try:
-                    content = await claude_client.generate_section(section, source_chunks)
+                    content = await llm_client.generate_section(section, source_chunks)
                 except Exception as e:
                     content = f"_(생성 실패: {e})_"
                 results[idx]["content"] = content
@@ -232,7 +232,7 @@ async def api_regenerate(session_id: str, index: int):
         raise HTTPException(400, "섹션 인덱스가 잘못되었습니다.")
 
     source_chunks = _extract_source_chunks(meta.get("sources", []))
-    content = await claude_client.generate_section(sections[index], source_chunks)
+    content = await llm_client.generate_section(sections[index], source_chunks)
     sections[index]["content"] = content
     storage.save_sections(session_id, sections)
 
