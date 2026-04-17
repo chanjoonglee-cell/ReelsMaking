@@ -51,6 +51,26 @@ function setupDropzone(dz) {
 
 document.querySelectorAll(".dropzone").forEach(setupDropzone);
 
+document.querySelectorAll(".btn-delete").forEach((btn) => {
+  btn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const row = btn.closest(".session-row");
+    const id = row.dataset.id;
+    const title = row.querySelector("a").textContent.trim();
+    if (!confirm(`"${title}" 세션을 삭제할까요?\n원본 파일까지 같이 삭제됩니다. 되돌릴 수 없음.`)) return;
+    btn.disabled = true;
+    try {
+      const resp = await fetch(`/api/sessions/${id}`, { method: "DELETE" });
+      if (!resp.ok) throw new Error(await resp.text());
+      row.remove();
+    } catch (err) {
+      alert("삭제 실패: " + err.message);
+      btn.disabled = false;
+    }
+  });
+});
+
 document.getElementById("btn-generate").addEventListener("click", async () => {
   if (!state.sources.length || !state.templates.length) {
     alert("원본과 양식 파일을 모두 업로드해 주세요.");

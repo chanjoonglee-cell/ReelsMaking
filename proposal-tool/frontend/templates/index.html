@@ -19,7 +19,7 @@
         <h2 class="font-semibold text-lg mb-2">① 원본 자료</h2>
         <div id="dz-sources" class="dropzone" data-kind="sources">
           <p class="text-slate-500">IR 덱, 기존 사업계획서, 회사 정보 문서…</p>
-          <p class="text-xs text-slate-400 mt-2">PDF / DOCX / PPTX / TXT / MD · 여러 파일 OK</p>
+          <p class="text-xs text-slate-400 mt-2">PDF / DOCX / PPTX / HWP / HWPX / TXT / MD · 여러 파일 OK</p>
           <input type="file" multiple class="hidden" />
           <ul class="file-list mt-3 text-sm text-left"></ul>
         </div>
@@ -28,7 +28,7 @@
         <h2 class="font-semibold text-lg mb-2">② 사업 양식</h2>
         <div id="dz-templates" class="dropzone" data-kind="templates">
           <p class="text-slate-500">공고문 + 사업계획서 양식</p>
-          <p class="text-xs text-slate-400 mt-2">PDF / DOCX · 보통 1–2개</p>
+          <p class="text-xs text-slate-400 mt-2">PDF / DOCX / HWP / HWPX · 보통 1–2개</p>
           <input type="file" multiple class="hidden" />
           <ul class="file-list mt-3 text-sm text-left"></ul>
         </div>
@@ -54,9 +54,12 @@
       <h2 class="font-semibold text-lg mb-3">이전 세션</h2>
       <ul id="session-list" class="divide-y divide-slate-200 border rounded-md bg-white">
         {% for s in sessions %}
-        <li class="flex items-center justify-between p-3">
-          <a class="font-medium hover:underline" href="/editor/{{ s.id }}">{{ s.title or s.name or s.id }}</a>
-          <span class="text-xs text-slate-400">{{ s.created_at or s.id }}</span>
+        <li class="session-row flex items-center justify-between p-3" data-id="{{ s.id }}">
+          <a class="font-medium hover:underline flex-1 truncate" href="/editor/{{ s.id }}">{{ s.title or s.name or s.id }}</a>
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-slate-400">{{ s.created_at or s.id }}</span>
+            <button class="btn-delete" title="삭제" aria-label="세션 삭제">✕</button>
+          </div>
         </li>
         {% else %}
         <li class="p-4 text-slate-400 text-sm">아직 세션이 없습니다.</li>
