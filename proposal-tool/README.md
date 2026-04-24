@@ -5,14 +5,24 @@
 ## 요구사항
 
 - Python 3.10+
-- OpenAI API 키 (기본 모델: `gpt-4o`. `.env` 의 `PROPOSAL_MODEL` 로 교체 가능)
+- OpenAI API 키 (기본 모델: `gpt-4.1`. `.env` 의 `PROPOSAL_MODEL` 로 교체 가능)
 - (선택) `pandoc` — 더 정돈된 DOCX 출력을 원할 때
 - (선택) `libreoffice` 또는 `soffice` — HWP 내보내기에 필요
 
-### 설치
+## 빠른 실행 (macOS)
+
+Finder에서 `proposal-tool/run.command` 를 **더블클릭**하세요.
+
+- 첫 실행: 가상환경 생성 → 패키지 설치 → OpenAI API 키 입력 요청
+- 이후: 서버만 실행됨 (1-2초)
+- 터미널 창이 열리고 `http://127.0.0.1:8000` 이 자동으로 브라우저에 뜹니다
+- 창을 닫으면 서버가 종료됩니다
+
+> macOS 보안 경고("확인되지 않은 개발자")가 뜨면, Finder에서 파일을 우클릭 → `열기` → `열기`를 한 번 눌러주세요. 이후부터는 더블클릭으로 바로 실행됩니다.
+
+## 수동 설치 (Linux / 직접 구성)
 
 ```bash
-# 프로젝트 루트에서
 cd proposal-tool
 python3 -m venv .venv
 source .venv/bin/activate
@@ -22,15 +32,14 @@ cp .env.example .env
 # .env 파일을 열어 OPENAI_API_KEY를 채우세요.
 ```
 
-macOS에서 외부 도구:
+외부 도구(선택):
 
 ```bash
-brew install pandoc libreoffice
-```
+# macOS
+brew install pandoc
+brew install --cask libreoffice
 
-Linux:
-
-```bash
+# Linux
 sudo apt install pandoc libreoffice
 ```
 
