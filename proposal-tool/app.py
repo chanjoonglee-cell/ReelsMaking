@@ -15,4 +15,15 @@ def _open_browser():
 
 if __name__ == "__main__":
     threading.Thread(target=_open_browser, daemon=True).start()
-    uvicorn.run("backend.main:app", host=config.HOST, port=config.PORT, reload=False)
+    # Force pure-Python loop/parser. uvloop+httptools occasionally drops large
+    # multipart uploads silently on macOS Apple Silicon (browser sees
+    # "Failed to fetch" with no server log). Pure asyncio+h11 is slightly
+    # slower but bulletproof for a 1-user local tool.
+    uvicorn.run(
+        "backend.main:app",
+        host=config.HOST,
+        port=config.PORT,
+        reload=False,
+        loop="asyncio",
+        http="h11",
+    )
