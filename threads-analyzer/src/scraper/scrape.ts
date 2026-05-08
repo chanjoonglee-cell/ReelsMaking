@@ -4,15 +4,22 @@ import type { Account, Post, Comment } from '../types';
 
 const THREADS_BASE = 'https://www.threads.net';
 
+export type ScrapeProgress =
+  | { stage: 'profile'; message: string }
+  | { stage: 'feed'; message: string; collected: number; target: number }
+  | { stage: 'post'; message: string; index: number; total: number };
+
 export type ScrapeOptions = {
   handle: string;
   postsLimit: number;
   commentsLimit: number;
   userDataDir: string;
   headless: boolean;
+  onProgress?: (p: ScrapeProgress) => void;
 };
 
-// All progress logs go to stderr so stdout stays clean for JSON consumers.
+// Stderr is the universal sink (CLI + dev console); structured progress events
+// are also delivered to the optional onProgress callback for SSE consumers.
 const log = (msg: string) => process.stderr.write(`[scrape] ${msg}\n`);
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -193,18 +200,39 @@ export async function scrapeAccount(opts: ScrapeOptions): Promise<Account> {
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
   });
 
+  const emit = opts.onProgress ?? (() => {});
+
   try {
     const page = await context.newPage();
+    emit({ stage: 'profile', message: `프로필 가져오는 중 @${opts.handle}` });
     const profile = await scrapeProfile(page, opts.handle);
     log(`profile: ${profile.displayName} · ${profile.followers} followers`);
 
+    emit({
+      stage: 'feed',
+      message: `게시물 목록 수집 중 (목표 ${opts.postsLimit}개)`,
+      collected: 0,
+      target: opts.postsLimit,
+    });
     const postUrls = await collectPostUrls(page, opts.handle, opts.postsLimit);
     log(`found ${postUrls.length}/${opts.postsLimit} post urls`);
+    emit({
+      stage: 'feed',
+      message: `게시물 ${postUrls.length}개 발견`,
+      collected: postUrls.length,
+      target: opts.postsLimit,
+    });
 
     const posts: Post[] = [];
     for (let i = 0; i < postUrls.length; i += 1) {
       const url = postUrls[i];
       log(`post ${i + 1}/${postUrls.length}: ${url}`);
+      emit({
+        stage: 'post',
+        message: `게시물 ${i + 1}/${postUrls.length} 수집 중`,
+        index: i + 1,
+        total: postUrls.length,
+      });
       try {
         const post = await scrapePostDetail(page, url, opts.commentsLimit);
         posts.push(post);
