@@ -1,5 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
+import OpenAI from 'openai';
+import { zodResponseFormat } from 'openai/helpers/zod';
 import {
   analysisSchema,
   SYSTEM_PROMPT,
@@ -10,13 +10,18 @@ import {
 } from './prompts';
 import type { Account, AccountSummary, Analysis, Post } from '../types';
 
-export type AnalyzerModel = 'claude-sonnet-4-6' | 'claude-haiku-4-5' | 'claude-opus-4-7';
+// Allowed values are not enumerated as a strict type because OpenAI may release
+// newer models we want to point at without a code change. The route validates
+// against ALLOWED_MODELS.
+export type AnalyzerModel = string;
 
-export const DEFAULT_MODEL: AnalyzerModel = 'claude-sonnet-4-6';
+// gpt-4o is the cost/quality default. gpt-4o-mini is ~20x cheaper but visibly
+// shallower on the synthesis call. Both support structured outputs.
+export const DEFAULT_MODEL: AnalyzerModel = 'gpt-4o';
 
-let _client: Anthropic | null = null;
-function getClient(): Anthropic {
-  if (!_client) _client = new Anthropic();
+let _client: OpenAI | null = null;
+function getClient(): OpenAI {
+  if (!_client) _client = new OpenAI();
   return _client;
 }
 
@@ -31,18 +36,12 @@ async function analyzePost(
   signal?: AbortSignal,
 ): Promise<Analysis> {
   const client = getClient();
-  const response = await client.messages.parse(
+  const completion = await client.chat.completions.parse(
     {
       model: args.model,
       max_tokens: 2000,
-      // Sonnet 4.6 default effort is `high`; analysis quality is fine at `medium`
-      // and we save ~30-40% tokens, which matters when fanning out across 10 posts.
-      output_config: {
-        effort: 'medium',
-        format: zodOutputFormat(analysisSchema),
-      },
-      system: SYSTEM_PROMPT,
       messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
         {
           role: 'user',
           content: buildUserPrompt({
@@ -53,14 +52,18 @@ async function analyzePost(
           }),
         },
       ],
+      response_format: zodResponseFormat(analysisSchema, 'post_analysis'),
     },
     { signal },
   );
 
-  if (!response.parsed_output) {
-    throw new Error(`analysis parse failed (stop_reason=${response.stop_reason})`);
+  const choice = completion.choices[0];
+  if (!choice?.message.parsed) {
+    throw new Error(
+      `analysis parse failed (finish_reason=${choice?.finish_reason ?? 'unknown'}; refusal=${choice?.message.refusal ?? 'none'})`,
+    );
   }
-  return response.parsed_output;
+  return choice.message.parsed;
 }
 
 export type AnalyzeProgress =
@@ -116,25 +119,26 @@ export async function synthesizeAccount(
   }
 
   const client = getClient();
-  const response = await client.messages.parse(
+  const completion = await client.chat.completions.parse(
     {
       model,
-      // Synthesis ouput is small (~600-1200 tokens) but the input grows with
+      // Synthesis output is small (~600-1200 tokens) but the input grows with
       // post count; allow generous output room.
       max_tokens: 2000,
-      // Bump to `high` effort: this is the single highest-value call of the run.
-      output_config: {
-        effort: 'high',
-        format: zodOutputFormat(accountSummarySchema),
-      },
-      system: SUMMARY_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildSummaryUserPrompt(account) }],
+      messages: [
+        { role: 'system', content: SUMMARY_SYSTEM_PROMPT },
+        { role: 'user', content: buildSummaryUserPrompt(account) },
+      ],
+      response_format: zodResponseFormat(accountSummarySchema, 'account_summary'),
     },
     { signal },
   );
 
-  if (!response.parsed_output) {
-    throw new Error(`synthesis parse failed (stop_reason=${response.stop_reason})`);
+  const choice = completion.choices[0];
+  if (!choice?.message.parsed) {
+    throw new Error(
+      `synthesis parse failed (finish_reason=${choice?.finish_reason ?? 'unknown'}; refusal=${choice?.message.refusal ?? 'none'})`,
+    );
   }
-  return response.parsed_output;
+  return choice.message.parsed;
 }

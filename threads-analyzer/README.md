@@ -1,18 +1,18 @@
 # Threads Analyzer
 
-핸들 입력 → Threads 인기 게시물 자동 수집 → Claude 분석 → 마케터 인사이트.
+핸들 입력 → Threads 인기 게시물 자동 수집 → GPT 분석 → 마케터 인사이트.
 PRD 기준 한 사이클 3분 이내. 자세한 스펙은 PRD 참고.
 
 현재 단계: **Phase 3 (Polish — 종합 인사이트 + 안정성)**
 
 - 입력 / 진행 / 결과 3개 화면 단일 페이지
-- `/api/analyze` SSE 엔드포인트 — 스크래핑 → Claude 병렬 분석 → **계정 단위
+- `/api/analyze` SSE 엔드포인트 — 스크래핑 → OpenAI 병렬 분석 → **계정 단위
   종합 (다음 콘텐츠 액션 3가지)** → 저장
 - 진행률 바, 단계별 라벨, 진행 로그 자동 스크롤, **취소 버튼**
 - `AbortController` 양방향 — 클라이언트 취소 시 서버도 즉시 빠져나옴
 - 부분 실패 노출 (게시물 일부 분석 실패해도 결과는 보여줌)
 - 점수 색상 코딩 (80+ 초록 / 60+ 황색 / 40+ 회색)
-- 모델: Claude Sonnet 4.6 기본 (Haiku 4.5 / Opus 4.7 선택 가능)
+- 모델: GPT-4o 기본 (GPT-4o mini 선택 가능)
 - 결과는 `data/{handle}.json`에 저장 → 같은 핸들 재진입 시 캐시 카드로 노출
 - Phase 1 의 CLI 스크래퍼 (`npm run scrape`) 도 그대로 동작
 
@@ -42,7 +42,7 @@ cp .env.example .env
 
 ```env
 THREADS_USER_DATA_DIR=./.threads-session
-ANTHROPIC_API_KEY=sk-ant-...        # Phase 2부터 필수
+OPENAI_API_KEY=sk-proj-...          # Phase 2부터 필수 (https://platform.openai.com/api-keys)
 ```
 
 ### 3. 최초 1회 — Threads 로그인
@@ -115,7 +115,7 @@ CLI 는 stdout 으로 JSON 1개, 진행 로그는 stderr 분리 → 파이프 �
   "handle": "marketing_kim",
   "posts": 10,
   "comments": 20,
-  "model": "claude-sonnet-4-6"
+  "model": "gpt-4o"
 }
 ```
 
@@ -202,7 +202,7 @@ threads-analyzer/
 │   │       └── cached/route.ts    # 캐시 목록 + 단건 로드
 │   ├── analyzer/
 │   │   ├── prompts.ts        # 시스템/유저 프롬프트, zod 스키마
-│   │   └── analyze.ts        # Claude 호출 + 병렬 러너
+│   │   └── analyze.ts        # OpenAI 호출 + 병렬 러너
 │   ├── scraper/
 │   │   ├── scrape.ts         # Playwright 스크래핑 (onProgress 훅)
 │   │   └── selectors.ts      # Threads DOM 셀렉터 (변경 시 첫 수정 지점)
@@ -219,15 +219,17 @@ threads-analyzer/
 
 ## 모델 선택
 
-기본은 `claude-sonnet-4-6`. UI 의 드롭다운에서 변경 가능.
+기본은 `gpt-4o`. UI 의 드롭다운에서 변경 가능.
 
 | 모델 | 언제 |
 |------|------|
-| `claude-sonnet-4-6` | 기본. 균형 잡힌 품질·속도. |
-| `claude-haiku-4-5` | 더 빠르고 저렴. 게시물 수가 많거나 3분 예산이 빠듯할 때. |
-| `claude-opus-4-7` | 최고 품질, 가장 느림. 인사이트 정확도가 중요한 단발 분석용. |
+| `gpt-4o` | 기본. 균형 잡힌 품질·속도. |
+| `gpt-4o-mini` | 더 빠르고 약 20배 저렴. 게시물 수가 많거나 3분 예산이 빠듯할 때. 종합 분석은 살짝 얕아질 수 있음. |
 
-`effort: "medium"` 으로 호출 (Sonnet 4.6 기본 `high` 보다 토큰 ~30-40% 절감).
+OpenAI 의 Structured Outputs (`response_format: zodResponseFormat(...)`) 로
+JSON 스키마 강제 — 응답 형태 깨질 일은 없음. 다른 모델 (예: `gpt-5`) 을
+쓰고 싶으면 `src/app/api/analyze/route.ts` 의 `VALID_MODELS` 와
+`src/app/page.tsx` 의 `MODELS` 배열에 추가만 하면 됨.
 
 ---
 
@@ -239,7 +241,7 @@ threads-analyzer/
 | `followers` 가 0 | 비공개 계정이거나 Threads 셀렉터 변경 → `selectors.ts` 의 `profile.followersAnchor` 점검 |
 | `posts` 가 비어있음 | `selectors.ts` / `collectPostUrls` 의 anchor 매칭 점검 |
 | 분석 단계에서 "parse failed" | 프롬프트 응답이 스키마와 안 맞음. `src/analyzer/prompts.ts` 의 시스템 프롬프트 강화 또는 `max_tokens` 증가 |
-| `ANTHROPIC_API_KEY is not set` | `.env` 에 키 입력 후 `npm run dev` 재시작 |
+| `OPENAI_API_KEY is not set` | `.env` 에 키 입력 후 `npm run dev` 재시작 |
 | 자주 차단됨 | 부계정 분리, `scrape.ts` 의 `randSleep(2000, 4000)` 상향 |
 | Vercel 등 호스팅 시 timeout | `route.ts` 의 `maxDuration` 조정. 무료 플랜은 10초로 SSE가 끊긴다 — 로컬 운영 권장. |
 

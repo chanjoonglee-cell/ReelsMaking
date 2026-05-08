@@ -11,13 +11,13 @@ import {
 import { saveAccount } from '@/lib/storage';
 import { formatSse, type ProgressData } from '@/lib/sse';
 
-// Playwright + Anthropic SDK both require Node.js — never let Next.js try Edge.
+// Playwright + OpenAI SDK both require Node.js — never let Next.js try Edge.
 export const runtime = 'nodejs';
 // Local-only tool; bump for hosted deploys (Vercel free=10s, pro=60s, enterprise=300s).
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
-const VALID_MODELS: AnalyzerModel[] = ['claude-sonnet-4-6', 'claude-haiku-4-5', 'claude-opus-4-7'];
+const VALID_MODELS: AnalyzerModel[] = ['gpt-4o', 'gpt-4o-mini'];
 const HANDLE_RE = /^[A-Za-z0-9_.]{1,64}$/;
 
 type Body = {
@@ -46,9 +46,9 @@ export async function POST(req: NextRequest) {
     ? (body.model as AnalyzerModel)
     : DEFAULT_MODEL;
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!process.env.OPENAI_API_KEY) {
     return Response.json(
-      { error: 'ANTHROPIC_API_KEY is not set on the server' },
+      { error: 'OPENAI_API_KEY is not set on the server' },
       { status: 500 },
     );
   }
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       };
 
       // Mirror client disconnects onto our local closed flag so we can short
-      // circuit further scraping / Claude calls instead of writing to a dead
+      // circuit further scraping / OpenAI calls instead of writing to a dead
       // stream. Playwright won't be interrupted mid-call but won't queue the
       // next post either.
       signal.addEventListener('abort', () => {
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
 
         progress({
           stage: 'analyzing',
-          message: `Claude (${model}) 병렬 분석 시작 — 게시물 ${account.posts.length}개`,
+          message: `OpenAI ${model} 병렬 분석 시작 — 게시물 ${account.posts.length}개`,
           index: 0,
           total: account.posts.length,
         });

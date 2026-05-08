@@ -14,16 +14,15 @@ type ProgressFrame = {
 };
 
 const MODELS = [
-  { value: 'claude-sonnet-4-6', label: 'Sonnet 4.6 (기본 — 균형)' },
-  { value: 'claude-haiku-4-5', label: 'Haiku 4.5 (속도 우선)' },
-  { value: 'claude-opus-4-7', label: 'Opus 4.7 (품질 최우선, 느림)' },
+  { value: 'gpt-4o', label: 'GPT-4o (기본 — 균형)' },
+  { value: 'gpt-4o-mini', label: 'GPT-4o mini (속도/비용 우선)' },
 ];
 
 export default function Home() {
   const [stage, setStage] = useState<Stage>('idle');
   const [handle, setHandle] = useState('');
   const [postsCount, setPostsCount] = useState<5 | 10 | 20>(10);
-  const [model, setModel] = useState<string>('claude-sonnet-4-6');
+  const [model, setModel] = useState<string>('gpt-4o');
   const [progressLog, setProgressLog] = useState<string[]>([]);
   const [latestProgress, setLatestProgress] = useState<ProgressFrame | null>(null);
   const [account, setAccount] = useState<Account | null>(null);
@@ -154,7 +153,7 @@ export default function Home() {
       <header className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Threads Analyzer</h1>
         <p className="text-neutral-400 mt-1 text-sm">
-          핸들 → 게시물 자동 수집 → Claude 분석 → 마케터 인사이트
+          핸들 → 게시물 자동 수집 → GPT 분석 → 마케터 인사이트
         </p>
       </header>
 

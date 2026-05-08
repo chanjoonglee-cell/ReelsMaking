@@ -15,7 +15,7 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: "Threads Analyzer",
-  description: "핸들 입력 → 인기 게시물 자동 수집 → Claude 분석 → 마케터 인사이트",
+  description: "핸들 입력 → 인기 게시물 자동 수집 → GPT 분석 → 마케터 인사이트",
 };
 
 export default function RootLayout({
