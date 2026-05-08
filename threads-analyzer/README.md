@@ -3,10 +3,15 @@
 핸들 입력 → Threads 인기 게시물 자동 수집 → Claude 분석 → 마케터 인사이트.
 PRD 기준 한 사이클 3분 이내. 자세한 스펙은 PRD 참고.
 
-현재 단계: **Phase 2 (웹 UI + AI 분석 통합)**
+현재 단계: **Phase 3 (Polish — 종합 인사이트 + 안정성)**
 
 - 입력 / 진행 / 결과 3개 화면 단일 페이지
-- `/api/analyze` SSE 엔드포인트 (스크래핑 → Claude 병렬 분석)
+- `/api/analyze` SSE 엔드포인트 — 스크래핑 → Claude 병렬 분석 → **계정 단위
+  종합 (다음 콘텐츠 액션 3가지)** → 저장
+- 진행률 바, 단계별 라벨, 진행 로그 자동 스크롤, **취소 버튼**
+- `AbortController` 양방향 — 클라이언트 취소 시 서버도 즉시 빠져나옴
+- 부분 실패 노출 (게시물 일부 분석 실패해도 결과는 보여줌)
+- 점수 색상 코딩 (80+ 초록 / 60+ 황색 / 40+ 회색)
 - 모델: Claude Sonnet 4.6 기본 (Haiku 4.5 / Opus 4.7 선택 가능)
 - 결과는 `data/{handle}.json`에 저장 → 같은 핸들 재진입 시 캐시 카드로 노출
 - Phase 1 의 CLI 스크래퍼 (`npm run scrape`) 도 그대로 동작
@@ -147,6 +152,14 @@ type Account = {
   followers: number
   scrapedAt: string
   posts: Post[]
+  summary?: AccountSummary    // Phase 3에서 추가됨
+}
+
+type AccountSummary = {
+  audienceProfile: string     // 누가 보고 왜 반응하는가
+  positioning: string         // 이 계정의 정체성/역할
+  winningPatterns: string[]   // 인기 게시물의 반복 공식 (2-3개)
+  topActions: string[]        // 다음 콘텐츠를 위한 액션 (정확히 3개)
 }
 
 type Post = {

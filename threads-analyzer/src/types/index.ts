@@ -26,6 +26,13 @@ export type Post = {
   analysis?: Analysis;
 };
 
+export type AccountSummary = {
+  audienceProfile: string;
+  positioning: string;
+  winningPatterns: string[];
+  topActions: string[];
+};
+
 export type Account = {
   handle: string;
   displayName: string;
@@ -33,4 +40,5 @@ export type Account = {
   followers: number;
   scrapedAt: string;
   posts: Post[];
+  summary?: AccountSummary;
 };

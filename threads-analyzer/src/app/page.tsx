@@ -1,10 +1,17 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import type { Account, Post, Analysis } from '@/types';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { Account, Post, Analysis, AccountSummary } from '@/types';
 
 type Stage = 'idle' | 'running' | 'done' | 'error';
 type CachedEntry = { handle: string; scrapedAt: string; size: number };
+
+type ProgressFrame = {
+  stage: 'scraping' | 'analyzing' | 'saving';
+  message: string;
+  index?: number;
+  total?: number;
+};
 
 const MODELS = [
   { value: 'claude-sonnet-4-6', label: 'Sonnet 4.6 (기본 — 균형)' },
@@ -18,12 +25,14 @@ export default function Home() {
   const [postsCount, setPostsCount] = useState<5 | 10 | 20>(10);
   const [model, setModel] = useState<string>('claude-sonnet-4-6');
   const [progressLog, setProgressLog] = useState<string[]>([]);
+  const [latestProgress, setLatestProgress] = useState<ProgressFrame | null>(null);
   const [account, setAccount] = useState<Account | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savedTo, setSavedTo] = useState<string | null>(null);
   const [cached, setCached] = useState<CachedEntry[]>([]);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
+  const abortRef = useRef<AbortController | null>(null);
 
   // refresh recent-list whenever we land on idle/done
   useEffect(() => {
@@ -47,19 +56,24 @@ export default function Home() {
     return Math.max(0, Math.floor(((stage === 'running' ? now : startedAt) - startedAt) / 1000));
   }, [now, startedAt, stage]);
 
-  async function start() {
-    const cleanHandle = handle.trim().replace(/^@/, '');
+  async function start(handleOverride?: string) {
+    const cleanHandle = (handleOverride ?? handle).trim().replace(/^@/, '');
     if (!cleanHandle) {
       setError('핸들을 입력해 줘');
       setStage('error');
       return;
     }
+    if (handleOverride && handleOverride !== handle) setHandle(cleanHandle);
+
+    abortRef.current = new AbortController();
     setStage('running');
     setProgressLog([`▸ 분석 시작: @${cleanHandle} · 게시물 ${postsCount}개 · ${model}`]);
+    setLatestProgress(null);
     setAccount(null);
     setError(null);
     setSavedTo(null);
     setStartedAt(Date.now());
+    let sawError = false;
 
     try {
       const res = await fetch('/api/analyze', {
@@ -71,6 +85,7 @@ export default function Home() {
           comments: 20,
           model,
         }),
+        signal: abortRef.current.signal,
       });
 
       if (!res.ok || !res.body) {
@@ -79,17 +94,34 @@ export default function Home() {
       }
 
       await consumeSse(res.body, {
-        onProgress: (msg) => setProgressLog((prev) => [...prev, `▸ ${msg}`]),
+        onProgress: (frame) => {
+          setLatestProgress(frame);
+          setProgressLog((prev) => [...prev, `▸ ${frame.message}`]);
+        },
         onAccount: (acc) => setAccount(acc),
-        onError: (msg) => setError(msg),
+        onError: (msg) => {
+          sawError = true;
+          setError(msg);
+        },
         onDone: ({ savedTo: s }) => setSavedTo(s),
       });
 
-      setStage(error ? 'error' : 'done');
+      setStage(sawError ? 'error' : 'done');
     } catch (err) {
-      setError((err as Error).message);
-      setStage('error');
+      if ((err as Error).name === 'AbortError') {
+        setProgressLog((prev) => [...prev, '▸ 사용자가 취소함']);
+        setStage('idle');
+      } else {
+        setError((err as Error).message);
+        setStage('error');
+      }
+    } finally {
+      abortRef.current = null;
     }
+  }
+
+  function cancel() {
+    abortRef.current?.abort();
   }
 
   async function loadCached(h: string) {
@@ -141,7 +173,12 @@ export default function Home() {
       )}
 
       {stage === 'running' && (
-        <ProgressView log={progressLog} elapsed={elapsed} />
+        <ProgressView
+          log={progressLog}
+          elapsed={elapsed}
+          progress={latestProgress}
+          onCancel={cancel}
+        />
       )}
 
       {(stage === 'done' || stage === 'error') && account && (
@@ -149,7 +186,9 @@ export default function Home() {
           account={account}
           savedTo={savedTo}
           elapsed={elapsed}
+          partialError={stage === 'error' ? error : null}
           onReset={reset}
+          onReanalyze={() => start(account.handle)}
         />
       )}
 
@@ -280,7 +319,27 @@ function InputForm(props: {
   );
 }
 
-function ProgressView({ log, elapsed }: { log: string[]; elapsed: number }) {
+function ProgressView({
+  log,
+  elapsed,
+  progress,
+  onCancel,
+}: {
+  log: string[];
+  elapsed: number;
+  progress: ProgressFrame | null;
+  onCancel: () => void;
+}) {
+  const logRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
+  }, [log.length]);
+
+  const pct = computeProgress(progress);
+  const stageLabel = progress
+    ? STAGE_LABEL[progress.stage]
+    : '시작 중';
+
   return (
     <div className="border border-neutral-800 rounded-xl p-6 bg-neutral-900/40">
       <div className="flex items-center justify-between mb-4">
@@ -289,11 +348,35 @@ function ProgressView({ log, elapsed }: { log: string[]; elapsed: number }) {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500" />
           </span>
-          <span className="text-sm font-semibold">분석 진행 중</span>
+          <span className="text-sm font-semibold">{stageLabel}</span>
+          {progress?.total != null && progress.index != null && (
+            <span className="text-xs text-neutral-500 font-mono">
+              {progress.index}/{progress.total}
+            </span>
+          )}
         </div>
-        <div className="text-xs text-neutral-500 font-mono">{formatElapsed(elapsed)}</div>
+        <div className="flex items-center gap-3">
+          <div className="text-xs text-neutral-500 font-mono">{formatElapsed(elapsed)}</div>
+          <button
+            onClick={onCancel}
+            className="px-3 py-1 rounded text-xs border border-neutral-700 hover:border-rose-500 hover:text-rose-300 transition"
+          >
+            취소
+          </button>
+        </div>
       </div>
-      <div className="font-mono text-sm space-y-1 max-h-96 overflow-y-auto">
+
+      <div className="h-1.5 bg-neutral-800 rounded overflow-hidden mb-4">
+        <div
+          className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-500"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
+      <div
+        ref={logRef}
+        className="font-mono text-sm space-y-1 max-h-96 overflow-y-auto"
+      >
         {log.map((line, i) => (
           <div
             key={i}
@@ -311,11 +394,33 @@ function ProgressView({ log, elapsed }: { log: string[]; elapsed: number }) {
   );
 }
 
+const STAGE_LABEL: Record<ProgressFrame['stage'], string> = {
+  scraping: '게시물 수집 중',
+  analyzing: 'AI 분석 중',
+  saving: '저장 중',
+};
+
+function computeProgress(p: ProgressFrame | null): number {
+  if (!p) return 2;
+  if (p.stage === 'scraping') {
+    if (p.total && p.index != null) return Math.min(40, (p.index / p.total) * 40);
+    return 8;
+  }
+  if (p.stage === 'analyzing') {
+    if (p.total && p.index != null) return 40 + (p.index / p.total) * 55;
+    return 45;
+  }
+  if (p.stage === 'saving') return 98;
+  return 0;
+}
+
 function ResultsView(props: {
   account: Account;
   savedTo: string | null;
   elapsed: number;
+  partialError: string | null;
   onReset: () => void;
+  onReanalyze: () => void;
 }) {
   const { account } = props;
   const totalLikes = account.posts.reduce((sum, p) => sum + p.likes, 0);
@@ -324,19 +429,34 @@ function ResultsView(props: {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
+      <div className="flex justify-between items-start gap-4">
+        <div className="min-w-0">
           <h2 className="text-2xl font-bold">@{account.handle}</h2>
           <p className="text-neutral-400">{account.displayName}</p>
           {account.bio && <p className="text-sm text-neutral-500 mt-1">{account.bio}</p>}
         </div>
-        <button
-          onClick={props.onReset}
-          className="px-3 py-1.5 rounded border border-neutral-700 hover:border-neutral-500 text-sm"
-        >
-          새 분석
-        </button>
+        <div className="flex gap-2 shrink-0">
+          <button
+            onClick={props.onReanalyze}
+            className="px-3 py-1.5 rounded border border-neutral-700 hover:border-blue-400 hover:text-blue-200 text-sm transition"
+          >
+            재분석
+          </button>
+          <button
+            onClick={props.onReset}
+            className="px-3 py-1.5 rounded border border-neutral-700 hover:border-neutral-500 text-sm"
+          >
+            새 분석
+          </button>
+        </div>
       </div>
+
+      {props.partialError && (
+        <div className="border border-amber-500/40 bg-amber-950/20 rounded-lg p-3 text-sm">
+          <span className="font-semibold text-amber-200">부분 실패</span>
+          <span className="text-neutral-300 ml-2 whitespace-pre-wrap">{props.partialError}</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Stat label="팔로워" value={account.followers.toLocaleString('ko-KR')} />
@@ -345,19 +465,72 @@ function ResultsView(props: {
         <Stat label="총 댓글" value={totalReplies.toLocaleString('ko-KR')} />
       </div>
 
+      {account.summary && <SummaryPanel summary={account.summary} />}
+
       {props.savedTo && (
         <p className="text-xs text-neutral-500 font-mono">
-          저장됨: {props.savedTo} · 소요 {formatElapsed(props.elapsed)}
+          저장됨: {props.savedTo}
+          {props.elapsed > 0 && ` · 소요 ${formatElapsed(props.elapsed)}`}
         </p>
       )}
 
-      <div className="space-y-3">
-        {account.posts
-          .slice()
-          .sort((a, b) => (b.analysis?.popularityScore ?? 0) - (a.analysis?.popularityScore ?? 0))
-          .map((post) => (
-            <PostCard key={post.id} post={post} />
-          ))}
+      <div>
+        <h3 className="text-sm font-semibold text-neutral-400 mb-3 uppercase tracking-wider">
+          게시물별 분석
+        </h3>
+        <div className="space-y-3">
+          {account.posts
+            .slice()
+            .sort((a, b) => (b.analysis?.popularityScore ?? 0) - (a.analysis?.popularityScore ?? 0))
+            .map((post) => (
+              <PostCard key={post.id} post={post} />
+            ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SummaryPanel({ summary }: { summary: AccountSummary }) {
+  return (
+    <div className="border border-blue-500/30 bg-gradient-to-br from-blue-950/30 to-emerald-950/20 rounded-xl p-5 space-y-4">
+      <h3 className="text-sm uppercase tracking-wider text-blue-300 font-semibold">
+        다음 콘텐츠 액션
+      </h3>
+
+      <ol className="space-y-2.5">
+        {summary.topActions.map((action, i) => (
+          <li key={i} className="flex gap-3">
+            <span className="shrink-0 w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
+              {i + 1}
+            </span>
+            <span className="pt-0.5 text-sm leading-relaxed">{action}</span>
+          </li>
+        ))}
+      </ol>
+
+      <div className="grid sm:grid-cols-2 gap-4 pt-3 border-t border-blue-500/20">
+        <div>
+          <h4 className="text-xs uppercase tracking-wider text-neutral-400 mb-1.5">반복 패턴</h4>
+          <ul className="space-y-1 text-sm text-neutral-200">
+            {summary.winningPatterns.map((pattern, i) => (
+              <li key={i} className="flex gap-1.5">
+                <span className="text-blue-400">·</span>
+                <span>{pattern}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <h4 className="text-xs uppercase tracking-wider text-neutral-400 mb-1">포지셔닝</h4>
+            <p className="text-sm text-neutral-200">{summary.positioning}</p>
+          </div>
+          <div>
+            <h4 className="text-xs uppercase tracking-wider text-neutral-400 mb-1">독자</h4>
+            <p className="text-sm text-neutral-200">{summary.audienceProfile}</p>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -406,7 +579,9 @@ function PostCard({ post }: { post: Post }) {
           </div>
           {a && (
             <div className="flex flex-col items-end shrink-0">
-              <div className="text-2xl font-bold tabular-nums">{a.popularityScore}</div>
+              <div className={`text-2xl font-bold tabular-nums ${scoreColor(a.popularityScore)}`}>
+                {a.popularityScore}
+              </div>
               <div className="text-[10px] text-neutral-500">SCORE</div>
             </div>
           )}
@@ -546,12 +721,19 @@ function formatElapsed(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+function scoreColor(score: number): string {
+  if (score >= 80) return 'text-emerald-400';
+  if (score >= 60) return 'text-amber-300';
+  if (score >= 40) return 'text-neutral-200';
+  return 'text-neutral-500';
+}
+
 // SSE consumer over fetch ReadableStream. Buffers partial frames across reads
 // and parses `event: NAME\ndata: JSON\n\n` blocks.
 async function consumeSse(
   body: ReadableStream<Uint8Array>,
   handlers: {
-    onProgress: (msg: string) => void;
+    onProgress: (frame: ProgressFrame) => void;
     onAccount: (account: Account) => void;
     onError: (msg: string) => void;
     onDone: (data: { savedTo: string | null }) => void;
@@ -581,8 +763,8 @@ async function consumeSse(
 
       try {
         const parsed = JSON.parse(data);
-        if (event === 'progress') handlers.onProgress(parsed.message);
-        else if (event === 'account') handlers.onAccount(parsed);
+        if (event === 'progress') handlers.onProgress(parsed as ProgressFrame);
+        else if (event === 'account') handlers.onAccount(parsed as Account);
         else if (event === 'error') handlers.onError(parsed.message);
         else if (event === 'done') handlers.onDone(parsed);
       } catch {

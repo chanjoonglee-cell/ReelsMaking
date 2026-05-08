@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { scrapeAccount, type ScrapeProgress } from '@/scraper/scrape';
 import {
   analyzePostsParallel,
+  synthesizeAccount,
   DEFAULT_MODEL,
   type AnalyzeProgress,
   type AnalyzerModel,
@@ -54,14 +55,29 @@ export async function POST(req: NextRequest) {
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      const signal = req.signal;
+      let closed = false;
+
       const send = (event: string, data: unknown) => {
+        if (closed) return;
         try {
           controller.enqueue(formatSse(event, data));
         } catch {
-          // Controller already closed — client disconnected, swallow.
+          closed = true;
         }
       };
       const progress = (data: ProgressData) => send('progress', data);
+      const checkAborted = () => {
+        if (signal.aborted) throw new Error('aborted');
+      };
+
+      // Mirror client disconnects onto our local closed flag so we can short
+      // circuit further scraping / Claude calls instead of writing to a dead
+      // stream. Playwright won't be interrupted mid-call but won't queue the
+      // next post either.
+      signal.addEventListener('abort', () => {
+        closed = true;
+      });
 
       try {
         progress({ stage: 'scraping', message: '브라우저 세션 시작 중…' });
@@ -76,6 +92,7 @@ export async function POST(req: NextRequest) {
           headless: true,
           onProgress: forwardScrapeProgress(progress),
         });
+        checkAborted();
 
         if (account.posts.length === 0) {
           send('error', {
@@ -94,7 +111,26 @@ export async function POST(req: NextRequest) {
           total: account.posts.length,
         });
 
-        await analyzePostsParallel(account, model, forwardAnalyzeProgress(progress));
+        await analyzePostsParallel(
+          account,
+          model,
+          forwardAnalyzeProgress(progress),
+          signal,
+        );
+        checkAborted();
+
+        const analyzedCount = account.posts.filter((p) => p.analysis).length;
+        if (analyzedCount > 0) {
+          progress({ stage: 'analyzing', message: '계정 종합 인사이트 합성 중…' });
+          try {
+            account.summary = await synthesizeAccount(account, model, signal);
+          } catch (err) {
+            send('error', {
+              message: `종합 분석 실패 (게시물별 결과는 정상): ${(err as Error).message}`,
+            });
+          }
+          checkAborted();
+        }
 
         progress({ stage: 'saving', message: 'data/ 폴더에 결과 저장 중' });
         let savedTo: string | null = null;
@@ -109,10 +145,21 @@ export async function POST(req: NextRequest) {
         send('account', account);
         send('done', { handle, savedTo });
       } catch (err) {
-        send('error', { message: (err as Error).message });
-        send('done', { handle, savedTo: null });
+        const msg = (err as Error).message;
+        if (msg === 'aborted' || signal.aborted) {
+          // Client cancelled. No need to push more events; the connection is gone.
+        } else {
+          send('error', { message: msg });
+          send('done', { handle, savedTo: null });
+        }
       } finally {
-        controller.close();
+        if (!closed) {
+          try {
+            controller.close();
+          } catch {
+            // already closed
+          }
+        }
       }
     },
   });

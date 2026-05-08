@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Post } from '../types';
+import type { Account, Post } from '../types';
 
 // Output schema — mirrors the Analysis type in src/types/index.ts.
 // Numerical bounds (min/max) are intentionally omitted: structured outputs
@@ -68,4 +68,63 @@ export function buildUserPrompt(args: {
 function truncate(s: string, max: number): string {
   if (s.length <= max) return s;
   return `${s.slice(0, max)}…`;
+}
+
+// ---- Account-level synthesis ----
+// Runs once after all per-post analyses complete. The output is what the user
+// actually came here for: a concrete plan for the next post.
+
+export const accountSummarySchema = z.object({
+  audienceProfile: z.string(),
+  positioning: z.string(),
+  winningPatterns: z.array(z.string()),
+  topActions: z.array(z.string()),
+});
+
+export const SUMMARY_SYSTEM_PROMPT = `당신은 시니어 콘텐츠 전략가다. 한 Threads 계정의 게시물 N개와 그 분석 결과를 받아, 운영팀이 다음 게시물에 즉시 적용할 수 있는 종합 인사이트를 만든다.
+
+출력:
+- audienceProfile (1-2문장): 누가 이 계정을 보고 왜 반응하는지. 인구학적 추측이 아니라 댓글의 어조/관심사에서 추론.
+- positioning (1-2문장): 이 계정이 자기 분야에서 어떤 역할/정체성을 차지하는지. 형식이 아니라 가치 제공의 종류.
+- winningPatterns (정확히 2-3개): 인기 게시물에서 반복적으로 발견되는 구조·장치·앵글. 단순 내용 요약이 아니라 "재현 가능한 공식".
+- topActions (정확히 3개): "다음에 만들 콘텐츠"를 위한 우선순위 순서의 구체적 액션. 제목 후크 / 포맷 / 톤 / CTA 등 즉시 실행 가능한 단위.
+
+원칙:
+- 모든 출력은 한국어.
+- 추상적 조언("일관성을 유지하라") 금지. 항상 관찰된 신호로 근거를 댄다.
+- 인기 게시물(상위 점수)에 가중치를 둬서 패턴 추출.
+- 계정 톤이 분명하지 않으면 "데이터 부족"이라고 명시.`;
+
+export function buildSummaryUserPrompt(account: Account): string {
+  const analyzedPosts = account.posts.filter((p) => p.analysis);
+  const sorted = analyzedPosts
+    .slice()
+    .sort((a, b) => (b.analysis!.popularityScore - a.analysis!.popularityScore));
+
+  const postBlocks = sorted.map((p, i) => {
+    const a = p.analysis!;
+    const themes = a.commentThemes
+      .map((t) => `${t.theme}(${(t.share * 100).toFixed(0)}%)`)
+      .join(', ');
+    return [
+      `### 게시물 ${i + 1} · 점수 ${a.popularityScore} · ${a.contentType}`,
+      `좋아요 ${p.likes.toLocaleString('ko-KR')} · 댓글 ${p.replies.toLocaleString('ko-KR')}`,
+      `본문: ${truncate(p.content, 240) || '(빈 게시물)'}`,
+      `인기 요인: ${a.popularityReasons.join(' / ')}`,
+      `댓글 주제: ${themes || '(없음)'}`,
+      `감정: 긍${(a.sentiment.positive * 100).toFixed(0)} 중${(a.sentiment.neutral * 100).toFixed(0)} 부${(a.sentiment.negative * 100).toFixed(0)}`,
+    ].join('\n');
+  });
+
+  return [
+    `[계정] @${account.handle} (${account.displayName})`,
+    `팔로워 ${account.followers.toLocaleString('ko-KR')}`,
+    account.bio ? `소개: ${account.bio}` : '',
+    '',
+    `[분석된 게시물 ${analyzedPosts.length}개 — 점수 내림차순]`,
+    '',
+    postBlocks.join('\n\n'),
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
