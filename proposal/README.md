@@ -1,100 +1,63 @@
-# 정부사업계획서 워크플로우
+# 혁신리그 사업계획서 작성 워크플로우
 
-`올해의 K-스타트업 2026 · 혁신창업리그` 사업계획서 작성을 위한 코칭/리뷰 파이프라인.
+「올해의 K-스타트업 2026 · 혁신창업리그」용 코칭 파이프라인.
 
-- **목표**: 사용자의 기존 초안을 공식 PSST 양식에 맞춰 진단하고, 그대로 붙여넣을 수 있는 개정안을 자동 생성한다.
-- **출력**: 평가 리포트(`report.md`) + 양식 붙여넣기용 본문(`revised-body.md`) → 공식 `.hwpx` 양식에 복붙.
-- **다음 리그**: 혁신리그 완성 후 동일 구조로 `templates/ai-league-2026.json` 추가 → AI리그 진행.
+## 진행 방식 (수정본)
 
-## 디렉터리 구조
+HWPX 자동 변환·주입은 시도했지만 표·여백 레이아웃이 깨지는 문제로 **포기**.
+공식 .hwp 양식을 그대로 유지하고, 항목별 가공 본문을 한글에서 복붙하는 방식으로 진행.
+
+### 절차
+1. `proposal/uploads/혁신리그_양식_원본.hwp` 를 한글 오피스에서 열기
+2. 각 항목 가공 결과(`proposal/sections/{itemId}.md`) 의 코드블럭 본문을 양식의 동일 itemId 자리에 복붙
+3. 양식의 표(참가신청서·요약·일정·자금·팀원 등)는 한글에서 직접 입력
+4. 본문 10p 이내로 확인 후 K-Startup 누리집 업로드
+
+## 디렉터리
 
 ```
 proposal/
-├── README.md              ← 이 파일
-├── templates/
-│   └── innovation-league-2026.json   # 공식 양식 구조 + 평가기준
-├── prompts/
-│   └── review.md          # GPT-4o 코치 시스템 프롬프트
-├── src/
-│   ├── 1-parseDraft.js    # .txt/.md/.docx/.hwp(x) → 텍스트
-│   ├── 2-mapToSections.js # 초안 → PSST 세부항목별 분배
-│   ├── 3-review.js        # 항목별 점수/갭/개정안 생성
-│   └── 4-exportReport.js  # 리포트 + 붙여넣기용 본문 생성
-├── input/                 # 사용자 초안 (.docx/.hwp/.txt) 드롭
-└── output/                # 자동 생성 (gitignore)
-    ├── draft.text.json
-    ├── mapped.json
-    ├── review.json
-    ├── report.md          ← 사용자가 읽는 리포트
-    └── revised-body.md    ← 양식에 붙여넣을 본문
+├── uploads/
+│   ├── 혁신리그_공고.txt                 # 공고 텍스트화
+│   ├── AI리그_공고.txt
+│   ├── 혁신리그_양식_원본.hwp           # 공식 양식 (한글에서 열어 사용)
+│   ├── 혁신리그_양식.txt                # 양식 구조 텍스트화 (참고)
+│   └── 내초안.txt                        # 사용자 초안 텍스트화
+├── sections/                              # 항목별 가공 본문
+│   ├── 1-1.md  ... 4-2.md
+│   └── (가공 완료된 것부터 채워짐)
+├── prompts/review.md                      # 평가 프롬프트 (참고)
+└── templates/innovation-league-2026.json  # 양식 메타데이터
 ```
 
-## 사용 절차
+## 항목별 진행 상태
 
-### 0. 1회 준비
-```bash
-npm install openai mammoth dotenv
-# HWP 파싱이 필요한 경우만:
-pip install pyhwp
-echo "OPENAI_API_KEY=sk-..." >> .env
-```
+| itemId | 양식 항목 | 상태 |
+|--------|----------|------|
+| 1-1 | 창업아이템 개발 배경 및 필요성 | ✅ 1차 가공 (확인 대기) |
+| 1-2 | 창업아이템 목표시장 분석 | ☐ |
+| 2-1 | 현황(준비) 및 실현(구체화) 방안 | ☐ |
+| 2-2 | ESG 가치 실현 + 경쟁력 확보방안 | ☐ (신규 작성 필수) |
+| 3-1-1 | 비즈니스 모델(BM) | ☐ |
+| 3-1-2 | 목표시장 진출 방안 | ☐ |
+| 3-1-3 | 사업 추진 일정 | ☐ |
+| 3-2 | 자금 소요 및 조달계획 | ☐ |
+| 4-1 | 대표자 현황 및 역량 | ☐ |
+| 4-2 | 팀원 현황 및 역량 | ☐ |
 
-### 1. 공식 양식 다운로드 (사용자가 직접)
-1. https://www.k-startup.go.kr 접속 → "올해의 K-스타트업 2026 혁신창업리그" 공고 검색
-2. `사업계획서_양식(혁신창업리그).hwpx` 다운로드 → `proposal/templates/원본양식/` 에 저장
-3. 누리집 사전 가입 + 실명/기업 인증 완료해 두기 (접수 직전 인증 시도 시 마감 위험)
+## 평가 기준 (혁신리그 평가지표)
 
-### 2. 초안 투입
-```bash
-cp ~/내사업계획서_초안.docx proposal/input/
-```
-하나 이상의 파일을 넣어도 되며, 자동으로 합쳐서 분석한다.
+| 항목 | 배점 | 핵심 |
+|------|------|------|
+| 문제인식(P) | 20 | 1-1, 1-2 |
+| 해결방안(S) | 30 | 2-1, **2-2(ESG)** |
+| 성장전략(S) | 40 | 3-1-1~3, 3-2 |
+| 팀구성(T) | 10 | 4-1, 4-2 |
 
-### 3. 파이프라인 실행
-```bash
-node proposal/src/1-parseDraft.js
-node proposal/src/2-mapToSections.js
-node proposal/src/3-review.js
-node proposal/src/4-exportReport.js
-```
+본문 10p 이내 (작성 목차·참가신청서·별첨 제외).
 
-또는 한 줄로:
-```bash
-node proposal/src/1-parseDraft.js && \
-  node proposal/src/2-mapToSections.js && \
-  node proposal/src/3-review.js && \
-  node proposal/src/4-exportReport.js
-```
+## 시도했지만 실패한 접근 (참고용)
 
-### 4. 결과 확인 → 양식에 반영
-1. `proposal/output/report.md` 를 열어 항목별 점수/갭 확인
-2. WEAK·MISSING 항목 위주로 본인 정보를 보강해 `proposal/input/` 의 초안 업데이트 → 2~4단계 재실행
-3. STRONG·OK 도달하면 `revised-body.md` 의 각 섹션을 `.hwpx` 공식 양식의 동일 itemId 항목에 복붙
-4. 본문 15페이지 이내 확인 → K-Startup 누리집 업로드
-
-## 공식 양식 구조 요약 (혁신리그 2026)
-
-| Section | itemId | 항목 | 페이지 예산 |
-|---|---|---|---|
-| 일반현황 | 0-1~0-4 | 기업/대표/매출/팀 | 1p |
-| 요약 | OV-1~OV-4 | 아이템·차별성·시장·대표이미지 | 1p |
-| 1. 문제인식 | 1-1, 1-2 | 배경/필요성, 시장(고객) 분석 | 3p |
-| 2. 실현가능성 | 2-1, 2-2 | 현황(TRL/MVP), 고도화 방안 | 4p |
-| 3. 성장전략 | 3-1, 3-2, 3-3 | BM, GTM, 일정·자금 | 5p |
-| 4. 팀구성 | 4-1, 4-2 | 대표/팀, 외부협력 | 2p |
-
-(상세는 `templates/innovation-league-2026.json` 참조)
-
-## HWP 출력 관련 주의
-
-- Node.js로 .hwpx 를 직접 생성하는 안정적인 라이브러리는 없음
-- 따라서 이 워크플로우는 **공식 양식 파일을 그대로 두고, 본문 텍스트만 자동 생성**해서 사용자가 복붙하는 방식
-- 양식의 표/이미지 자리는 사용자가 직접 채워야 함 (간트차트, 자금운용 표, 팀 조직도 등)
-
-## AI리그 확장 (다음 단계)
-
-혁신리그 결과물 확정 후:
-1. `templates/ai-league-2026.json` 생성 (AI리그 양식 기반)
-   - AI 기술 차별성, 데이터셋·모델, AI 윤리/거버넌스 추가 항목
-2. `prompts/review-ai.md` 로 AI 특화 평가 기준 반영
-3. 동일 파이프라인 재실행
+- `hwp → hwpx` 변환 후 텍스트 주입 (@masteroflearning/hwpxcore 사용)
+- 결과: 텍스트 주입은 성공했으나, HWP→HWPX 변환 단계에서 표 너비·여백·페이지 레이아웃이 깨짐
+- 결론: 원본 .hwp 를 절대 변환하지 않고, 한글 오피스에서 직접 본문만 복붙하는 게 유일한 안전 경로
