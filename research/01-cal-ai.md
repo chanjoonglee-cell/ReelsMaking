@@ -73,8 +73,32 @@ Henry Langmack과 함께 만든 첫 협업 프로젝트. David Goggins에서 영
 
 ### 1.3 결정적 변환지점 — 사용자 성장 3단계
 
-![Cal AI 22개월 매출 성장 곡선 (월 매출 $28K → $5.7M)](./images/01-cal-ai/02-revenue-growth.png)
-<sub>📸 **Slot 3 / 매출 성장 곡선** — 원본: [Yuanchang's Blog MFM 정리](https://yuanchang.org/en/posts/zach-yadegari-cal-ai-50m-exit/) 또는 직접 작성 (마일스톤 표 1.2 기반 그래프) → 저장: `research/images/01-cal-ai/02-revenue-growth.png`</sub>
+**매출 성장 곡선** (마일스톤 표 1.2 기반):
+
+```mermaid
+xychart-beta
+    title "Cal AI 월 매출 성장 (USD, log scale)"
+    x-axis ["24.06", "24.07", "24.12", "25.01", "26.01"]
+    y-axis "월 매출 (M USD)" 0 --> 6
+    bar [0.028, 0.115, 1.67, 0.42, 5.7]
+    line [0.028, 0.115, 1.67, 0.42, 5.7]
+```
+
+> 📊 데이터: 24.06 $28K (Month 1) → 24.07 $115K (+311%) → 24.12 ~$1.67M/월 ($20M ARR) → 25.01 신년 폭증 후 누적 매출 $5M+ → 26.01 단월 $5.7M ($50M+ ARR). 출처: [MFM Ep 687·802][T1] / [Yuanchang][T2] / [Getlatka][T3]
+
+**사용자 성장 3단계 채널 진화**:
+
+```mermaid
+flowchart LR
+    A["<b>0 → 1만</b><br/>2024.05~06<br/>━━━━━━━━━<br/>창업자 TikTok 큐레이션<br/>수동 DM<br/>비용 ≈ 0"] --> B["<b>1만 → 100만</b><br/>2024.07~12<br/>━━━━━━━━━<br/>VA 인플루언서 자동화<br/>네이티브 콘텐츠<br/>$2M MRR 달성"]
+    B --> C["<b>100만 → 1500만</b><br/>2025.01~2026.03<br/>━━━━━━━━━<br/>Meta·TikTok·IG Ads<br/>$7K/일<br/>Apple Search Ads"]
+    C --> D["<b>엑싯</b><br/>2026.03<br/>━━━━━━━━━<br/>MyFitnessPal<br/>인수"]
+    style A fill:#e8f5e9
+    style B fill:#fff9c4
+    style C fill:#ffe0b2
+    style D fill:#ffcdd2
+```
+
 
 
 #### 0 → 1만 (2024.05~2024.06, 1~2개월)
