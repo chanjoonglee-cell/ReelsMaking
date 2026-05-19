@@ -4,7 +4,12 @@
 > **분석자**: Claude (언어의숲 리서치)  
 > **종합 한 줄**: 10대 부트스트랩 4인 팀이 AI 사진 칼로리 추적이라는 단일 메커닉으로 22개월 만에 ARR $50M·15M DL을 만들어 MyFitnessPal에 매각한, AI 네이티브 freemium의 신문법 케이스.
 
+> 📸 **이미지 슬롯 안내**: 본 문서에는 핵심 이미지 7곳 슬롯이 표시되어 있습니다. 환경 네트워크 제약으로 자동 다운로드 불가 → 원본 소스에서 이미지를 받아 `research/images/01-cal-ai/` 폴더에 지정된 파일명으로 저장하면 자동 렌더링됩니다.
+
 ---
+
+![Cal AI 앱 아이콘 / 로고](./images/01-cal-ai/00-logo.png)
+<sub>📸 **Slot 1 / Logo** — 원본: [Apple App Store](https://apps.apple.com/us/app/cal-ai-calorie-tracker/id6480417616) → 저장: `research/images/01-cal-ai/00-logo.png`</sub>
 
 ## 0. Quick Facts
 
@@ -25,6 +30,9 @@
 ---
 
 ## 1. 기업의 성장 과정
+
+![Cal AI 4인 창업팀 (Zach Yadegari·Henry Langmack·Blake Anderson·Jake Castillo)](./images/01-cal-ai/01-founders.jpg)
+<sub>📸 **Slot 2 / 창업팀** — 원본: [TechCrunch 2025.03.16](https://techcrunch.com/2025/03/16/photo-calorie-app-cal-ai-downloaded-over-a-million-times-was-built-by-two-teenagers/) 또는 [CNBC 2025.09.06](https://www.cnbc.com/2025/09/06/cal-ai-how-a-teenage-ceo-built-a-fast-growing-calorie-tracking-app.html) → 저장: `research/images/01-cal-ai/01-founders.jpg`</sub>
 
 ### 1.1 창업 배경
 
@@ -65,6 +73,10 @@ Henry Langmack과 함께 만든 첫 협업 프로젝트. David Goggins에서 영
 
 ### 1.3 결정적 변환지점 — 사용자 성장 3단계
 
+![Cal AI 22개월 매출 성장 곡선 (월 매출 $28K → $5.7M)](./images/01-cal-ai/02-revenue-growth.png)
+<sub>📸 **Slot 3 / 매출 성장 곡선** — 원본: [Yuanchang's Blog MFM 정리](https://yuanchang.org/en/posts/zach-yadegari-cal-ai-50m-exit/) 또는 직접 작성 (마일스톤 표 1.2 기반 그래프) → 저장: `research/images/01-cal-ai/02-revenue-growth.png`</sub>
+
+
 #### 0 → 1만 (2024.05~2024.06, 1~2개월)
 - **채널**: 창업자 본인이 **개인 TikTok 계정을 fitness/health 콘텐츠만 팔로우하도록 큐레이션** → 알고리즘이 타겟 크리에이터 노출 → **수동 DM**으로 인플루언서 컨택 [Yuanchang summary][T2]
 - **의사결정**: VC 펀딩 안 받기, Day 1부터 paywall 세팅
@@ -98,6 +110,10 @@ Henry Langmack과 함께 만든 첫 협업 프로젝트. David Goggins에서 영
 > LTV = 리텐션 × ARPU × 사용기간
 
 ### 2.1 리텐션 메커닉
+
+![Cal AI 핵심 화면: 음식 사진 촬영 → AI 칼로리/매크로 추정 결과](./images/01-cal-ai/03-app-core-screen.png)
+<sub>📸 **Slot 4 / 코어 메커닉 스크린샷** — 원본: [Apple App Store 스크린샷](https://apps.apple.com/us/app/cal-ai-calorie-tracker/id6480417616) 또는 [Screensdesign UI Breakdown](https://screensdesign.com/showcase/cal-ai-calorie-tracker) → 저장: `research/images/01-cal-ai/03-app-core-screen.png`</sub>
+
 
 **공개 지표**:
 - 고객 유지율 30%+ (1개월 기준 추정) [Getlatka][T3]
@@ -170,6 +186,10 @@ Henry Langmack과 함께 만든 첫 협업 프로젝트. David Goggins에서 영
 
 ### 3.2 바이럴·레퍼럴
 
+![Cal AI TikTok 인플루언서 네이티브 콘텐츠 예시](./images/01-cal-ai/04-tiktok-influencer.png)
+<sub>📸 **Slot 5 / TikTok 콘텐츠 예시** — 원본: [TikTok 검색 "Cal AI"](https://www.tiktok.com/discover/cal-ai-app-review) — fitness 인플루언서가 음식 촬영 후 AI 결과 보여주는 네이티브 영상 캡처 → 저장: `research/images/01-cal-ai/04-tiktok-influencer.png`</sub>
+
+
 - **산출물이 콘텐츠가 됨**: AI 추정 결과 화면 = TikTok 콘텐츠. "AI가 내 음식 칼로리 맞췄나?" 비포애프터 포맷이 알고리즘 친화적
 - **공식 레퍼럴 프로그램 여부**: 공개 자료에 명시 없음 ❓
 - **UGC**: 사용자가 자발적으로 결과 스크린샷 공유 → Cal AI 검색 트래픽 부메랑
@@ -205,6 +225,10 @@ Henry Langmack과 함께 만든 첫 협업 프로젝트. David Goggins에서 영
 
 ### 4.2 Paywall 디자인 — **★ 핵심 차별화**
 
+![Cal AI 온보딩 → Paywall 플로우 (퀴즈 → 커스텀 플랜 → 3일 무료체험 paywall)](./images/01-cal-ai/05-onboarding-paywall.png)
+<sub>📸 **Slot 6 / 온보딩+Paywall 플로우** — 원본: [Adapty Paywall Library](https://adapty.io/paywall-library/cal-ai-food-calorie-tracker/) 또는 [Screensdesign](https://screensdesign.com/apps/cal-ai-calorie-tracker) — 온보딩 퀴즈 → 로딩 → paywall 4~5컷 합성 권장 → 저장: `research/images/01-cal-ai/05-onboarding-paywall.png`</sub>
+
+
 **Superwall 케이스 스터디 데이터** [Superwall][T2]:
 
 | 항목 | 수치 |
@@ -229,6 +253,10 @@ Henry Langmack과 함께 만든 첫 협업 프로젝트. David Goggins에서 영
 - **Dynamic Pricing**: 사용자 응답 패턴별 최적 가격 표시
 
 ### 4.3 가격 구조
+
+![Cal AI 다이내믹 프라이싱 — 사용자별로 다른 가격 노출 예시](./images/01-cal-ai/06-dynamic-pricing.png)
+<sub>📸 **Slot 7 / 다이내믹 프라이싱** — 원본: [NutriScan 비교 분석](https://nutriscan.app/blog/posts/cal-ai-pricing-2026-monthly-yearly-premium-abc6e7b26f) — 동일 시점에 사용자별로 다른 가격 보이는 paywall 캡처 비교 → 저장: `research/images/01-cal-ai/06-dynamic-pricing.png`</sub>
+
 
 | 플랜 | 가격 범위 | 비고 |
 |------|----------|------|

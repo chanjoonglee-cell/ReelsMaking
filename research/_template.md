@@ -4,7 +4,16 @@
 > **분석자**: Claude (언어의숲 리서치)  
 > **소요 시간**: N시간
 
+> 📸 **이미지 슬롯 컨벤션**:
+> - 권장 슬롯 위치: ① 로고 (문서 맨 위) ② 창업팀 (1.1) ③ 매출/사용자 성장 곡선 (1.3) ④ 코어 프로덕트 스크린샷 (2.1) ⑤ 마케팅 자산 예시 (3.2) ⑥ Paywall/온보딩 플로우 (4.2) ⑦ 가격 표·인수 발표 등 부속 자료 (4.3 또는 1.4)
+> - 저장 위치: `research/images/0X-[case-name]/` 폴더
+> - 파일명: `[slot번호]-[설명].png|jpg` (예: `00-logo.png`, `01-founders.jpg`)
+> - 마크다운 임베드: `![설명](./images/0X-[case-name]/파일명)` + 다음 줄에 `<sub>📸 **Slot N / 라벨** — 원본: [출처 링크] → 저장: 경로</sub>`
+
 ---
+
+![Logo](./images/0X-[case-name]/00-logo.png)
+<sub>📸 **Slot 1 / Logo** — 원본: [출처] → 저장: `research/images/0X-[case-name]/00-logo.png`</sub>
 
 ## 0. Quick Facts
 
@@ -25,6 +34,9 @@
 
 ## 1. 기업의 성장 과정
 
+![창업팀](./images/0X-[case-name]/01-founders.jpg)
+<sub>📸 **Slot 2 / 창업팀** — 원본: [출처] → 저장: `research/images/0X-[case-name]/01-founders.jpg`</sub>
+
 ### 1.1 창업 배경
 - 누가 / 왜 / 어떤 문제
 
@@ -35,6 +47,10 @@
 | | | | |
 
 ### 1.3 결정적 변환지점 (사용자 성장 3단계)
+
+![성장 곡선](./images/0X-[case-name]/02-growth-curve.png)
+<sub>📸 **Slot 3 / 매출·사용자 성장 곡선** — 원본: [출처] → 저장: `research/images/0X-[case-name]/02-growth-curve.png`</sub>
+
 
 #### 0 → 1만
 - 채널 / 의사결정 / 비용
@@ -56,6 +72,9 @@
 ## 2. 프로덕트 관점 — LTV 높이는 방법
 
 > LTV = 리텐션 × ARPU × 사용기간
+
+![코어 프로덕트 스크린샷](./images/0X-[case-name]/03-core-screen.png)
+<sub>📸 **Slot 4 / 코어 프로덕트 스크린샷** — 원본: [출처] → 저장: `research/images/0X-[case-name]/03-core-screen.png`</sub>
 
 ### 2.1 리텐션 메커닉
 - D1 / D7 / D30 리텐션 (공개·추정 + 출처)
@@ -96,6 +115,9 @@
 - PR·언론
 - 디자인 어워드·앱스토어 피처드
 
+![마케팅 자산 예시](./images/0X-[case-name]/04-marketing-asset.png)
+<sub>📸 **Slot 5 / 마케팅 자산·콘텐츠 예시** — 원본: [출처] → 저장: `research/images/0X-[case-name]/04-marketing-asset.png`</sub>
+
 ### 3.2 바이럴·레퍼럴 메커닉
 - 산출물이 콘텐츠가 되는가
 - 레퍼럴 인센티브
@@ -123,11 +145,17 @@
 - 무료·구독·IAP·광고 비중
 - 카테고리별 매출 분포
 
+![Paywall·온보딩 플로우](./images/0X-[case-name]/05-paywall-flow.png)
+<sub>📸 **Slot 6 / Paywall·온보딩 플로우** — 원본: [출처] → 저장: `research/images/0X-[case-name]/05-paywall-flow.png`</sub>
+
 ### 4.2 Paywall 디자인
 - Paywall 트리거 위치
 - 문구·UX
 - 무료→유료 동선
 - A/B 테스트 운영
+
+![가격표·부속 자료](./images/0X-[case-name]/06-pricing-table.png)
+<sub>📸 **Slot 7 / 가격표·인수 발표·부속 자료** — 원본: [출처] → 저장: `research/images/0X-[case-name]/06-pricing-table.png`</sub>
 
 ### 4.3 가격 구조
 - 월 / 연 / lifetime
