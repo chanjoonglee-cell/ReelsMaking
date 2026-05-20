@@ -177,17 +177,19 @@
 ## Mermaid 다이어그램 (https://mermaid.live)
 
 ```mermaid
-flowchart TD
+flowchart LR
     A1[인스타 릴스] --> AQ1
     A2[메타 광고] --> AQ1
     A3[검색·맘카페] --> AQ1
 
     subgraph ACQ[Acquisition · 온보딩]
+      direction LR
       AQ1[1.로그인] --> AQ2[2.닉네임] --> AQ3[3.생년] --> AQ4[4.성별] --> AQ5[★5.어트리뷰션] --> AQ6[★6.관심사 5+] --> AQ7[★7.알림권한]
     end
 
     AQ7 --> AC1
     subgraph ACT[Activation · 첫 학습]
+      direction LR
       AC1[1.학습홈] --> AC2[2.일기작성] --> AC3[3.AI처리] --> AC4[4.문장노출] --> AC5[5.60초카운트] --> AC6[6.인출입력] --> AC7[7.피드백처리] --> AC8[8.점수] --> AC9[★9.WoW]
     end
 
@@ -195,6 +197,7 @@ flowchart TD
     AC9 --> RT1
 
     subgraph REV[Revenue]
+      direction LR
       RV1[페이월] --> RV2{플랜선택}
       RV2 -->|1년| RV3[결제]
       RV2 -->|6개월| RV3
@@ -203,6 +206,7 @@ flowchart TD
     end
 
     subgraph RET[Retention]
+      direction LR
       RT1[푸시알림] --> RT2[재방문] --> RT3[새일기] --> RT4[정서누적] --> RT5[습관형성]
       RT5 -.->|D21~D66| RT1
     end
@@ -210,6 +214,7 @@ flowchart TD
     RV4 --> RF1
     RT5 --> RF1
     subgraph REF[Referral]
+      direction LR
       RF1[초대코드 입력] --> RF2[1개월 무료]
       RF3[결과카드 SNS공유] -.가설.-> RF1
     end
