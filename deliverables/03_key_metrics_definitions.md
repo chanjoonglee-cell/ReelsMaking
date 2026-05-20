@@ -1,6 +1,8 @@
-# 산출물 3 — Key Metrics 정의 & 측정 이벤트
+# 산출물 3 — Key Metrics 정의 & 측정 이벤트 (부록 · 내부 운영용)
 
-## 곱셈 공식 (북극성 → 매출)
+> 메인 보드는 `03_key_metrics.md` 참조. 이 문서는 NorthStar(MRR · LTV/CAC)를 굴리는 선행 지표의 정의/이벤트 명세서로, 외부 제출이 아닌 팀 내부 운영용이다.
+
+## 곱셈 공식 (선행지표 → NorthStar)
 
 ```
 노출 × 다운로드CVR × 가입CVR × 온보딩완료율 × Activation율 × 결제CVR × 평균플랜단가 = 일 매출

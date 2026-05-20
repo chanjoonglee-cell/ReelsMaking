@@ -6,10 +6,20 @@
 |---|---|---|---|
 | 1 | `01_funnel.md` | 비즈니스 퍼널 (3-1) — 9단계 + Awareness 6채널 + 타겟 공통점 | 슬라이드 1 |
 | 2 | `02_user_flow.md` | 유저 플로우 (3-2) — 실제 화면 기반 23개 노드 + Mermaid 도식 | 슬라이드 2~3 (Miro/FigJam) |
-| 3 | `03_key_metrics.csv` | Key Metrics (3-3) — 구글시트 import용 일자별 헤더 + 파생 지표 | 구글시트 |
-| 4 | `03_key_metrics_definitions.md` | 화면별 측정 이벤트 정의 + 지표 공식 | 슬라이드 4 + 시트 부록 |
-| 5 | `04_compare_notes.md` | 본인 v1 vs 권장 v2 비교 노트 | 발표·질의응답용 |
-| 6 | `README.md` | 이 문서 | 사용 가이드 |
+| 3 | **`03_key_metrics.md`** | **Key Metrics 메인 보드 (3-3) — LTV/CAC 공식 + NorthStar(Dual) + Financial Modeling** | **슬라이드 4 (메인)** |
+| 3-부록 | `03_key_metrics.csv` | 일자별 운영 KPI 추적 시트 (구글시트 import용) | 내부 운영 시트 |
+| 3-부록 | `03_key_metrics_definitions.md` | 화면별 측정 이벤트 정의 + 파생 지표 공식 | 내부 명세서 |
+| 4 | `04_compare_notes.md` | 본인 v1 vs 권장 v2 비교 노트 | 발표·질의응답용 |
+| 5 | `README.md` | 이 문서 | 사용 가이드 |
+
+## NorthStar Metric (Dual)
+
+| 축 | 지표 | 현재 → BEP(27) → 이상(28) | 의미 |
+|---|---|---|---|
+| **규모(Scale)** | **MRR** | 107만원 → 1,590만원 → 1.12억원 | 사업의 절대 크기 |
+| **효율(Efficiency)** | **LTV/CAC** | 4.73 → 6.9 → 12.5 | 돈을 넣으면 나오는가 |
+
+두 축은 곱연산 관계 — 한쪽만 추구 시 다른 쪽이 깨진다. 자세한 근거는 `03_key_metrics.md` 참조.
 
 ## 슬라이드/시트로 옮기는 방법
 
@@ -28,12 +38,15 @@
 1. `02_user_flow.md` 의 Mermaid 블록을 https://mermaid.live 에 붙여넣기
 2. PNG export 후 슬라이드에 삽입
 
-### 3. Key Metrics 시트 (3-3)
-1. `03_key_metrics.csv` 를 구글시트에서 `파일 → 가져오기 → 업로드`
-2. 첫 행 헤더 22개 컬럼 확인
-3. 일자별 행에 실제 수치 입력 (Mixpanel/Amplitude/GA에서 가져오기)
-4. 우측에 곱셈 공식 수식 셀 추가 (예: `=B2*C2/B2*D2/C2...`)
-5. 파생 지표 표는 별도 시트(`Definitions`)로 분리
+### 3. Key Metrics (3-3)
+**메인 보드 — 외부 제출**
+1. `03_key_metrics.md` 의 3개 보드(LTV/CAC 공식 / NorthStar 표 / Financial Modeling)를 슬라이드에 그대로 옮긴다
+2. NorthStar는 **MRR + LTV/CAC** 두 개 모두 강조 (★ 표기)
+
+**부록 — 내부 운영 시트**
+3. `03_key_metrics.csv` 를 구글시트에서 `파일 → 가져오기 → 업로드`
+4. 일자별 행에 실제 수치 입력 (Mixpanel/Amplitude/GA에서)
+5. 파생 지표·이벤트 정의는 `03_key_metrics_definitions.md` 참조
 
 ### 4. 발표 시
 - `04_compare_notes.md` 를 핸드아웃으로 활용
