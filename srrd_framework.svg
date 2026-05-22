@@ -1,178 +1,175 @@
-<svg width="1600" height="900" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg">
+<svg width="1400" height="980" viewBox="0 0 1400 980" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
       <path d="M0,0 L10,6 L0,12 z" fill="#374151"/>
     </marker>
     <style>
-      .title { font-family: 'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-size: 26px; font-weight: 700; fill: #111827; }
-      .subtitle { font-family: 'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-size: 14px; fill: #6B7280; }
-      .h2 { font-family: 'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-size: 18px; font-weight: 700; }
-      .h3 { font-family: 'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-size: 15px; font-weight: 600; }
-      .body { font-family: 'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-size: 13px; fill: #1F2937; }
-      .small { font-family: 'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-size: 12px; fill: #4B5563; }
-      .micro { font-family: 'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-size: 11px; fill: #6B7280; }
-      .formula { font-family: 'Cambria Math','Times New Roman',serif; font-size: 17px; font-style: italic; font-weight: 600; fill: #111827; }
+      .title { font-family: 'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-size: 32px; font-weight: 800; fill: #111827; }
+      .subtitle { font-family: 'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-size: 18px; fill: #6B7280; }
+      .h2 { font-family: 'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-size: 24px; font-weight: 700; }
+      .h3 { font-family: 'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-size: 20px; font-weight: 700; }
+      .body { font-family: 'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-size: 17px; fill: #1F2937; }
+      .bodyB { font-family: 'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-size: 17px; font-weight: 700; fill: #111827; }
+      .small { font-family: 'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-size: 15px; fill: #374151; }
+      .smallB { font-family: 'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-size: 15px; font-weight: 700; fill: #1F2937; }
+      .micro { font-family: 'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-size: 14px; fill: #6B7280; }
     </style>
   </defs>
 
   <!-- Title -->
-  <text x="800" y="42" text-anchor="middle" class="title">SRRD 이론적 프레임 — 한 장 정리</text>
-  <text x="800" y="65" text-anchor="middle" class="subtitle">자기참조 기반 인출 학습 설계전략 (Self-Referential Retrieval Design) | 20253973 이찬중</text>
+  <text x="700" y="48" text-anchor="middle" class="title">SRRD 이론적 프레임 — 한 장 정리</text>
+  <text x="700" y="78" text-anchor="middle" class="subtitle">자기참조 기반 인출 학습 설계전략 (Self-Referential Retrieval Design)</text>
 
   <!-- LEFT COLUMN -->
   <!-- ① Problem -->
-  <rect x="30" y="95" width="370" height="240" fill="#FEF3C7" stroke="#D97706" stroke-width="2" rx="10"/>
-  <text x="50" y="123" class="h3" fill="#92400E">① 문제 (Problem)</text>
-  <text x="50" y="150" class="body" font-weight="700">Bjork (1994) Desirable Difficulty</text>
-  <text x="50" y="170" class="body" font-weight="700">Paradox의 모바일 맥락 확장</text>
-  <text x="50" y="200" class="small">• 인출학습 = 학습효과 ↑</text>
-  <text x="50" y="222" class="small">• 인출학습 = 인지부하 ↑ → 이탈</text>
-  <text x="50" y="252" class="small" font-style="italic" fill="#92400E">"인출학습이라는 어려운 학습 방식을,</text>
-  <text x="50" y="270" class="small" font-style="italic" fill="#92400E">인지부하가 발생함에도 불구하고,</text>
-  <text x="50" y="288" class="small" font-style="italic" fill="#92400E">지속시키는 학습 경험의 설계 전략은</text>
-  <text x="50" y="306" class="small" font-style="italic" fill="#92400E">무엇인가?"</text>
-  <text x="50" y="325" class="micro">→ 모바일 자기주도 학습 맥락</text>
+  <rect x="30" y="105" width="340" height="270" fill="#FEF3C7" stroke="#D97706" stroke-width="2.5" rx="12"/>
+  <text x="50" y="138" class="h3" fill="#92400E">① 문제 (Problem)</text>
+  <text x="50" y="172" class="bodyB" fill="#451A03">Bjork (1994)</text>
+  <text x="50" y="196" class="bodyB" fill="#451A03">Desirable Difficulty Paradox</text>
+  <text x="50" y="228" class="small">• 인출학습 = 학습효과 ↑</text>
+  <text x="50" y="252" class="small">• 인출학습 = 인지부하 ↑</text>
+  <text x="50" y="274" class="small" fill="#92400E">    → 학습자 이탈</text>
+  <line x1="50" y1="292" x2="350" y2="292" stroke="#D97706" stroke-width="1" stroke-dasharray="3,3"/>
+  <text x="50" y="318" class="small" font-style="italic" fill="#7C2D12">"어려운 인출학습을 인지부하에도</text>
+  <text x="50" y="340" class="small" font-style="italic" fill="#7C2D12">불구하고 지속시키는</text>
+  <text x="50" y="362" class="small" font-style="italic" fill="#7C2D12">설계전략은 무엇인가?"</text>
 
   <!-- ② Construct -->
-  <rect x="30" y="350" width="370" height="160" fill="#DBEAFE" stroke="#2563EB" stroke-width="2" rx="10"/>
-  <text x="50" y="378" class="h3" fill="#1E40AF">② Construct (구성 개념)</text>
-  <text x="50" y="408" class="body" font-weight="700">모바일 언어학습의 지속성</text>
-  <text x="50" y="428" class="small">Persistence in Mobile-Assisted</text>
-  <text x="50" y="446" class="small">Language Learning</text>
-  <text x="50" y="475" class="micro">학습자가 모바일 환경에서 자기주도적으로</text>
-  <text x="50" y="492" class="micro">인출학습을 반복 수행하고 일정 기간동안</text>
-  <text x="50" y="509" class="micro">학습 행동을 유지하는 추상적 구성 개념</text>
+  <rect x="30" y="390" width="340" height="160" fill="#DBEAFE" stroke="#2563EB" stroke-width="2.5" rx="12"/>
+  <text x="50" y="423" class="h3" fill="#1E40AF">② Construct</text>
+  <text x="50" y="455" class="bodyB" fill="#1E3A8A">모바일 언어학습의 지속성</text>
+  <text x="50" y="479" class="small">Persistence in Mobile-Assisted</text>
+  <text x="50" y="501" class="small">Language Learning (MALL)</text>
+  <text x="50" y="530" class="micro">모바일 환경에서 자기주도적으로</text>
+  <text x="50" y="548" class="micro">인출학습을 반복·유지하는 상태</text>
 
   <!-- Arrow Left → Center -->
-  <line x1="405" y1="220" x2="445" y2="220" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
-  <line x1="405" y1="430" x2="445" y2="430" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="375" y1="240" x2="420" y2="240" stroke="#374151" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="375" y1="470" x2="420" y2="470" stroke="#374151" stroke-width="2.5" marker-end="url(#arrow)"/>
 
   <!-- CENTER COLUMN -->
   <!-- ③ Focal Concept SRRD -->
-  <rect x="450" y="95" width="680" height="160" fill="#E0E7FF" stroke="#4F46E5" stroke-width="3" rx="12"/>
-  <text x="790" y="125" text-anchor="middle" class="h2" fill="#3730A3">③ Focal Concept — ★ SRRD ★</text>
-  <text x="790" y="153" text-anchor="middle" class="body" font-weight="700">자기참조 기반 인출 학습 설계전략</text>
-  <text x="790" y="173" text-anchor="middle" class="small">Self-Referential Retrieval Design</text>
-  <line x1="510" y1="190" x2="1070" y2="190" stroke="#4F46E5" stroke-width="1" stroke-dasharray="3,3"/>
-  <text x="790" y="212" text-anchor="middle" class="small" fill="#3730A3">학습자의 일상 데이터를 자기참조적으로 활용하여 인출학습을 설계함으로써,</text>
-  <text x="790" y="232" text-anchor="middle" class="small" fill="#3730A3">인지부하에 따른 이탈을 방지하고 학습 지속을 가능하게 하는 학습경험 설계전략</text>
+  <rect x="425" y="105" width="555" height="155" fill="#E0E7FF" stroke="#4F46E5" stroke-width="3" rx="14"/>
+  <text x="702" y="140" text-anchor="middle" class="h2" fill="#3730A3">③ ★ SRRD ★</text>
+  <text x="702" y="170" text-anchor="middle" class="bodyB" fill="#3730A3">자기참조 기반 인출 학습 설계전략</text>
+  <text x="702" y="194" text-anchor="middle" class="small" fill="#4F46E5">Self-Referential Retrieval Design</text>
+  <line x1="475" y1="210" x2="930" y2="210" stroke="#4F46E5" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="702" y="234" text-anchor="middle" class="small" fill="#1E1B4B">학습자 일상 데이터를 자기참조적으로 활용한</text>
+  <text x="702" y="254" text-anchor="middle" class="small" fill="#1E1B4B">인출학습의 학습경험 설계전략</text>
 
   <!-- Arrow down to A/B/C -->
-  <line x1="790" y1="263" x2="790" y2="295" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
-
-  <!-- Section label -->
-  <text x="790" y="287" text-anchor="middle" class="small" font-weight="700" fill="#4F46E5">세 요소의 결합으로 정의</text>
+  <line x1="702" y1="270" x2="702" y2="305" stroke="#374151" stroke-width="2.5" marker-end="url(#arrow)"/>
 
   <!-- Element A -->
-  <rect x="455" y="305" width="200" height="230" fill="#ECFEFF" stroke="#0891B2" stroke-width="2" rx="10"/>
-  <text x="555" y="335" text-anchor="middle" class="h2" fill="#155E75">A</text>
-  <text x="555" y="362" text-anchor="middle" class="body" font-weight="700">자기참조적 콘텐츠</text>
-  <text x="555" y="380" text-anchor="middle" class="body" font-weight="700">구성</text>
-  <line x1="475" y1="395" x2="635" y2="395" stroke="#0891B2" stroke-width="1"/>
-  <text x="475" y="420" class="micro">학습 콘텐츠를 학습자</text>
-  <text x="475" y="437" class="micro">본인의 일상 데이터로</text>
-  <text x="475" y="454" class="micro">부터 생성한다</text>
-  <text x="475" y="485" class="small" fill="#0E7490" font-style="italic">A만 작동 시 →</text>
-  <text x="475" y="503" class="small" fill="#9CA3AF">단발성 자기관련</text>
-  <text x="475" y="520" class="small" fill="#9CA3AF">콘텐츠에 그침</text>
+  <rect x="430" y="315" width="170" height="225" fill="#ECFEFF" stroke="#0891B2" stroke-width="2.5" rx="12"/>
+  <text x="515" y="350" text-anchor="middle" class="h2" fill="#155E75">A</text>
+  <text x="515" y="380" text-anchor="middle" class="bodyB" fill="#155E75">자기참조</text>
+  <text x="515" y="400" text-anchor="middle" class="bodyB" fill="#155E75">콘텐츠 구성</text>
+  <line x1="450" y1="415" x2="580" y2="415" stroke="#0891B2" stroke-width="1"/>
+  <text x="450" y="442" class="small">콘텐츠를 학습자</text>
+  <text x="450" y="462" class="small">본인의 일상</text>
+  <text x="450" y="482" class="small">데이터로 생성</text>
+  <text x="450" y="514" class="micro" font-style="italic" fill="#9CA3AF">A만 →</text>
+  <text x="450" y="532" class="micro" fill="#9CA3AF">단발성 자기관련</text>
 
   <!-- Element B -->
-  <rect x="690" y="305" width="200" height="230" fill="#FCE7F3" stroke="#DB2777" stroke-width="2" rx="10"/>
-  <text x="790" y="335" text-anchor="middle" class="h2" fill="#9D174D">B</text>
-  <text x="790" y="362" text-anchor="middle" class="body" font-weight="700">즉각적 피드백</text>
-  <text x="790" y="380" text-anchor="middle" class="body" font-weight="700">&amp; 보상</text>
-  <line x1="710" y1="395" x2="870" y2="395" stroke="#DB2777" stroke-width="1"/>
-  <text x="710" y="420" class="micro">인출 직후 피드백 제공,</text>
-  <text x="710" y="437" class="micro">정서적·시각적 보상</text>
-  <text x="710" y="454" class="micro">제공</text>
-  <text x="710" y="485" class="small" fill="#BE185D" font-style="italic">B만 작동 시 →</text>
-  <text x="710" y="503" class="small" fill="#9CA3AF">일반적인</text>
-  <text x="710" y="520" class="small" fill="#9CA3AF">게이미피케이션</text>
+  <rect x="617" y="315" width="170" height="225" fill="#FCE7F3" stroke="#DB2777" stroke-width="2.5" rx="12"/>
+  <text x="702" y="350" text-anchor="middle" class="h2" fill="#9D174D">B</text>
+  <text x="702" y="380" text-anchor="middle" class="bodyB" fill="#9D174D">즉각 피드백</text>
+  <text x="702" y="400" text-anchor="middle" class="bodyB" fill="#9D174D">&amp; 보상</text>
+  <line x1="637" y1="415" x2="767" y2="415" stroke="#DB2777" stroke-width="1"/>
+  <text x="637" y="442" class="small">인출 직후 정서·</text>
+  <text x="637" y="462" class="small">시각적 보상</text>
+  <text x="637" y="482" class="small">제공</text>
+  <text x="637" y="514" class="micro" font-style="italic" fill="#9CA3AF">B만 →</text>
+  <text x="637" y="532" class="micro" fill="#9CA3AF">일반 게이미피케이션</text>
 
   <!-- Element C -->
-  <rect x="925" y="305" width="200" height="230" fill="#DCFCE7" stroke="#16A34A" stroke-width="2" rx="10"/>
-  <text x="1025" y="335" text-anchor="middle" class="h2" fill="#14532D">C</text>
-  <text x="1025" y="362" text-anchor="middle" class="body" font-weight="700">데이터 누적</text>
-  <text x="1025" y="380" text-anchor="middle" class="body" font-weight="700">사이클</text>
-  <line x1="945" y1="395" x2="1105" y2="395" stroke="#16A34A" stroke-width="1"/>
-  <text x="945" y="420" class="micro">학습 결과가 데이터에</text>
-  <text x="945" y="437" class="micro">누적, 다음 인출의</text>
-  <text x="945" y="454" class="micro">자기관련성을 증폭</text>
-  <text x="945" y="485" class="small" fill="#15803D" font-style="italic">C만 작동 시 →</text>
-  <text x="945" y="503" class="small" fill="#9CA3AF">의미 없는</text>
-  <text x="945" y="520" class="small" fill="#9CA3AF">데이터 축적</text>
+  <rect x="804" y="315" width="170" height="225" fill="#DCFCE7" stroke="#16A34A" stroke-width="2.5" rx="12"/>
+  <text x="889" y="350" text-anchor="middle" class="h2" fill="#14532D">C</text>
+  <text x="889" y="380" text-anchor="middle" class="bodyB" fill="#14532D">데이터 누적</text>
+  <text x="889" y="400" text-anchor="middle" class="bodyB" fill="#14532D">사이클</text>
+  <line x1="824" y1="415" x2="954" y2="415" stroke="#16A34A" stroke-width="1"/>
+  <text x="824" y="442" class="small">결과가 데이터에</text>
+  <text x="824" y="462" class="small">누적, 자기관련성</text>
+  <text x="824" y="482" class="small">증폭</text>
+  <text x="824" y="514" class="micro" font-style="italic" fill="#9CA3AF">C만 →</text>
+  <text x="824" y="532" class="micro" fill="#9CA3AF">의미 없는 축적</text>
 
   <!-- Combination emphasis -->
-  <rect x="450" y="555" width="680" height="55" fill="#FFFBEB" stroke="#F59E0B" stroke-width="2" stroke-dasharray="6,3" rx="8"/>
-  <text x="790" y="582" text-anchor="middle" class="body" font-weight="700" fill="#92400E">⚡ SRRD = A · B · C 세 요소의 결합 자체</text>
-  <text x="790" y="600" text-anchor="middle" class="micro" fill="#92400E">하나만 작동하면 SRRD가 성립하지 않음</text>
+  <rect x="425" y="560" width="555" height="70" fill="#FFFBEB" stroke="#F59E0B" stroke-width="2.5" stroke-dasharray="6,3" rx="10"/>
+  <text x="702" y="592" text-anchor="middle" class="bodyB" fill="#92400E">⚡ SRRD = A · B · C 세 요소의 결합 자체</text>
+  <text x="702" y="617" text-anchor="middle" class="small" fill="#92400E">하나만 작동하면 SRRD가 성립하지 않음</text>
 
   <!-- Arrow Center → Right -->
-  <line x1="1135" y1="180" x2="1175" y2="180" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
-  <line x1="1135" y1="430" x2="1175" y2="430" stroke="#374151" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="985" y1="180" x2="1030" y2="180" stroke="#374151" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="985" y1="450" x2="1030" y2="450" stroke="#374151" stroke-width="2.5" marker-end="url(#arrow)"/>
 
   <!-- RIGHT COLUMN -->
   <!-- ④ Variables -->
-  <rect x="1180" y="95" width="390" height="210" fill="#F3F4F6" stroke="#374151" stroke-width="2" rx="10"/>
-  <text x="1200" y="123" class="h3" fill="#111827">④ Variables</text>
-  <text x="1200" y="150" class="small" font-weight="700">독립변수 (IV)</text>
-  <text x="1200" y="170" class="micro">세 요소(A·B·C)의 충족 여부 및 강도를</text>
-  <text x="1200" y="187" class="micro">합산한 composite index</text>
-  <text x="1200" y="215" class="small" font-weight="700">종속변수 1 (DV1) — 리텐션</text>
-  <text x="1200" y="235" class="micro">D1 / D7 / D21 / D66 시점의 활성 학습자 비율</text>
-  <text x="1200" y="263" class="small" font-weight="700">종속변수 2 (DV2) — 학습완주율</text>
-  <text x="1200" y="283" class="micro">학습을 포기하지 않은 사람들의 비율</text>
+  <rect x="1035" y="105" width="335" height="220" fill="#F3F4F6" stroke="#374151" stroke-width="2.5" rx="12"/>
+  <text x="1055" y="138" class="h3" fill="#111827">④ Variables</text>
+  <text x="1055" y="170" class="smallB">독립변수 (IV)</text>
+  <text x="1055" y="194" class="micro">A·B·C 충족 여부 및 강도의</text>
+  <text x="1055" y="212" class="micro">composite index</text>
+  <text x="1055" y="242" class="smallB">종속변수 1 — 리텐션</text>
+  <text x="1055" y="266" class="micro">D1 / D7 / D21 / D66 활성 비율</text>
+  <text x="1055" y="295" class="smallB">종속변수 2 — 학습완주율</text>
+  <text x="1055" y="319" class="micro">학습을 포기하지 않은 비율</text>
 
   <!-- ⑤ Tentative Proposition -->
-  <rect x="1180" y="320" width="390" height="135" fill="#DBEAFE" stroke="#2563EB" stroke-width="2" rx="10"/>
-  <text x="1200" y="348" class="h3" fill="#1E40AF">⑤ Tentative Proposition</text>
-  <text x="1200" y="376" class="small" fill="#1E3A8A">SRRD가 적용된 모바일 언어학습 환경은,</text>
-  <text x="1200" y="394" class="small" fill="#1E3A8A">적용되지 않은 환경 대비 학습자의 리텐션과</text>
-  <text x="1200" y="412" class="small" fill="#1E3A8A">학습완주율을 유의미하게 증가시킨다.</text>
-  <text x="1200" y="438" class="micro" font-style="italic" fill="#1E40AF">→ R(t) = M(t) × A(t) / C(t) 의 학술적 진술</text>
+  <rect x="1035" y="340" width="335" height="145" fill="#DBEAFE" stroke="#2563EB" stroke-width="2.5" rx="12"/>
+  <text x="1055" y="373" class="h3" fill="#1E40AF">⑤ Proposition</text>
+  <text x="1055" y="405" class="small" fill="#1E3A8A">SRRD 적용 환경은 미적용 환경</text>
+  <text x="1055" y="427" class="small" fill="#1E3A8A">대비 리텐션과 학습완주율을</text>
+  <text x="1055" y="449" class="small" fill="#1E3A8A">유의미하게 증가시킨다.</text>
+  <text x="1055" y="475" class="micro" font-style="italic" fill="#4F46E5">R(t) = M(t) × A(t) / C(t)</text>
 
   <!-- ⑦ Falsification -->
-  <rect x="1180" y="470" width="390" height="140" fill="#FEE2E2" stroke="#DC2626" stroke-width="2" rx="10"/>
-  <text x="1200" y="498" class="h3" fill="#991B1B">⑦ 반증 조건 (Falsifiability)</text>
-  <text x="1200" y="525" class="small" fill="#7F1D1D">SRRD가 적용된 사례와 미적용 사례 간</text>
-  <text x="1200" y="543" class="small" fill="#7F1D1D">D30 재방문율 및 학습완주율에 유의미한</text>
-  <text x="1200" y="561" class="small" fill="#7F1D1D">차이가 관찰되지 않을 경우,</text>
-  <text x="1200" y="582" class="small" font-weight="700" fill="#991B1B">본 명제는 폐기된다.</text>
+  <rect x="1035" y="500" width="335" height="135" fill="#FEE2E2" stroke="#DC2626" stroke-width="2.5" rx="12"/>
+  <text x="1055" y="533" class="h3" fill="#991B1B">⑦ 반증 조건</text>
+  <text x="1055" y="565" class="small" fill="#7F1D1D">SRRD 적용/미적용 사이</text>
+  <text x="1055" y="587" class="small" fill="#7F1D1D">D30 재방문율·학습완주율에</text>
+  <text x="1055" y="609" class="small" fill="#7F1D1D">차이가 없으면</text>
+  <text x="1055" y="630" class="smallB" fill="#991B1B">본 명제는 폐기된다.</text>
 
   <!-- ⑥ Existing Theories (Bottom row) -->
-  <rect x="30" y="640" width="1540" height="225" fill="#FAF5FF" stroke="#7C3AED" stroke-width="2" rx="10"/>
-  <text x="50" y="668" class="h3" fill="#5B21B6">⑥ 기존 이론과의 차별점 및 관계성</text>
+  <rect x="30" y="675" width="1340" height="245" fill="#FAF5FF" stroke="#7C3AED" stroke-width="2.5" rx="12"/>
+  <text x="55" y="708" class="h3" fill="#5B21B6">⑥ 기존 이론과의 차별점 및 관계성</text>
 
   <!-- Theory 1 -->
-  <rect x="60" y="685" width="490" height="160" fill="#FFFFFF" stroke="#A78BFA" stroke-width="1" rx="6"/>
-  <text x="75" y="710" class="small" font-weight="700" fill="#5B21B6">Bjork (1994) Desirable Difficulty</text>
-  <line x1="75" y1="720" x2="535" y2="720" stroke="#E5E7EB" stroke-width="1"/>
-  <text x="75" y="742" class="micro" font-weight="700">기존:</text>
-  <text x="115" y="742" class="micro">패러독스 자체를 제시</text>
-  <text x="75" y="762" class="micro" fill="#9CA3AF">  (실험실·교실 맥락에서 멈춤)</text>
-  <text x="75" y="790" class="micro" font-weight="700" fill="#5B21B6">본 연구:</text>
-  <text x="125" y="790" class="micro" fill="#1F2937">모바일 자기주도 맥락에서의</text>
-  <text x="125" y="808" class="micro" fill="#1F2937">설계전략을 제안</text>
+  <rect x="55" y="725" width="425" height="180" fill="#FFFFFF" stroke="#A78BFA" stroke-width="1.5" rx="8"/>
+  <text x="75" y="754" class="smallB" fill="#5B21B6">Bjork (1994)</text>
+  <text x="75" y="774" class="smallB" fill="#5B21B6">Desirable Difficulty</text>
+  <line x1="75" y1="785" x2="465" y2="785" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="75" y="810" class="micro" font-weight="700">기존:</text>
+  <text x="120" y="810" class="micro">패러독스 자체 제시</text>
+  <text x="75" y="830" class="micro" fill="#9CA3AF">  (실험실·교실 맥락)</text>
+  <text x="75" y="862" class="micro" font-weight="700" fill="#5B21B6">본 연구:</text>
+  <text x="130" y="862" class="micro" fill="#1F2937">모바일 자기주도 맥락의</text>
+  <text x="130" y="882" class="micro" fill="#1F2937">설계전략 제안</text>
 
   <!-- Theory 2 -->
-  <rect x="565" y="685" width="490" height="160" fill="#FFFFFF" stroke="#A78BFA" stroke-width="1" rx="6"/>
-  <text x="580" y="710" class="small" font-weight="700" fill="#5B21B6">Rogers et al. (1977) Self-Reference Effect</text>
-  <line x1="580" y1="720" x2="1040" y2="720" stroke="#E5E7EB" stroke-width="1"/>
-  <text x="580" y="742" class="micro" font-weight="700">기존:</text>
-  <text x="620" y="742" class="micro">단기 기억 향상의 영역</text>
-  <text x="580" y="790" class="micro" font-weight="700" fill="#5B21B6">본 연구:</text>
-  <text x="630" y="790" class="micro" fill="#1F2937">지속 행동까지 확장</text>
+  <rect x="497" y="725" width="425" height="180" fill="#FFFFFF" stroke="#A78BFA" stroke-width="1.5" rx="8"/>
+  <text x="517" y="754" class="smallB" fill="#5B21B6">Rogers et al. (1977)</text>
+  <text x="517" y="774" class="smallB" fill="#5B21B6">Self-Reference Effect</text>
+  <line x1="517" y1="785" x2="907" y2="785" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="517" y="810" class="micro" font-weight="700">기존:</text>
+  <text x="562" y="810" class="micro">단기 기억 향상 영역</text>
+  <text x="517" y="862" class="micro" font-weight="700" fill="#5B21B6">본 연구:</text>
+  <text x="572" y="862" class="micro" fill="#1F2937">지속 행동까지 확장</text>
 
   <!-- Theory 3 -->
-  <rect x="1070" y="685" width="490" height="160" fill="#FFFFFF" stroke="#A78BFA" stroke-width="1" rx="6"/>
-  <text x="1085" y="710" class="small" font-weight="700" fill="#5B21B6">Roediger &amp; Karpicke (2006) Testing Effect</text>
-  <line x1="1085" y1="720" x2="1545" y2="720" stroke="#E5E7EB" stroke-width="1"/>
-  <text x="1085" y="742" class="micro" font-weight="700">기존:</text>
-  <text x="1125" y="742" class="micro">단발 학습 성과</text>
-  <text x="1085" y="790" class="micro" font-weight="700" fill="#5B21B6">본 연구:</text>
-  <text x="1135" y="790" class="micro" fill="#1F2937">반복 인출의 지속 조건을</text>
-  <text x="1135" y="808" class="micro" fill="#1F2937">설계 차원에서 다룸</text>
+  <rect x="939" y="725" width="425" height="180" fill="#FFFFFF" stroke="#A78BFA" stroke-width="1.5" rx="8"/>
+  <text x="959" y="754" class="smallB" fill="#5B21B6">Roediger &amp; Karpicke (2006)</text>
+  <text x="959" y="774" class="smallB" fill="#5B21B6">Testing Effect</text>
+  <line x1="959" y1="785" x2="1349" y2="785" stroke="#E5E7EB" stroke-width="1"/>
+  <text x="959" y="810" class="micro" font-weight="700">기존:</text>
+  <text x="1004" y="810" class="micro">단발 학습 성과</text>
+  <text x="959" y="862" class="micro" font-weight="700" fill="#5B21B6">본 연구:</text>
+  <text x="1014" y="862" class="micro" fill="#1F2937">반복 인출의 지속 조건을</text>
+  <text x="1014" y="882" class="micro" fill="#1F2937">설계 차원에서 다룸</text>
 
   <!-- Footer -->
-  <text x="800" y="890" text-anchor="middle" class="micro" fill="#9CA3AF">과학적 사고와 이론화의 기초 | 3주차 과제 — 개념화 (Construct → Concept → Variable)</text>
+  <text x="700" y="955" text-anchor="middle" class="micro" fill="#9CA3AF">과학적 사고와 이론화의 기초 | 3주차 과제 — 개념화 (Construct → Concept → Variable)</text>
 </svg>
