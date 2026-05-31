@@ -146,9 +146,35 @@
 
 ---
 
+## 부록 A. 언어학습 앱 레퍼럴 벤치마크
+
+| 앱 | 추천인 보상 | 피추천인 보상 | 트리거 | 상한 |
+|----|------------|--------------|--------|------|
+| **Duolingo** | Super 1주 무료 | Super 1주 무료 | 친구 **가입**(링크) | Super days 누적 |
+| **Busuu** | 친구당 프리미엄 1개월 | 30일 프리미엄 체험 | **가입**(링크) | **12명 = 최대 1년** |
+| **Babbel** | **€10 선불카드**(현금성) | 1개월 무료 | 친구가 **3개월+ 결제** | — |
+| Memrise/Mondly | (소비자 레퍼럴 아님 — 제휴 15~30% 커미션) | — | — | — |
+| Cake/Speak/산타(한국) | 상시 레퍼럴 공개정보 적음 — 무료체험·시즌 프로모·법인(B2B) 위주 | | | |
+
+비교군(타 업종): 드롭박스 = 제품형(저장공간) 양방향, 3900% 성장 / PayPal = 현금 $20+$20, $60M 소진.
+
+**패턴**
+1. 거의 모두 **양방향** 보상
+2. 보상 = **무료 구독 기간(제품형)이 주류** (Babbel만 추천인 현금 — 소수파)
+3. **상한 존재** (Busuu 12명/1년 ← 우리 "연 12개월"과 동일)
+4. **전환 게이팅 분기**: 듀오링고·Busuu=가입 기준(저마찰) / Babbel=다년 결제 기준(고의도)
+5. **배치 = 프로필 + 성취 공유 모먼트** (듀오링고 성취 공유 → +116%)
+
+**우리 확정안의 위치**: Babbel의 *전환 게이팅*(친구 결제 시 지급) + 듀오링고/Busuu의 *제품형 무료 기간 보상* 을 결합하고, Babbel의 현금 카드는 회피(드롭박스 교훈). → 업계 베스트 조합.
+
+**한국 시장 시사점**: 메이저 영어앱들이 상시 인앱 레퍼럴이 약하고 무료체험·프로모·퍼포먼스 광고·B2B에 의존 → **잘 설계된 인앱 레퍼럴 자체가 차별화 + CAC 절감 채널**.
+
 ## 참고 자료
 - [듀오링고 레퍼럴 — 양방향 1주 무료, 성취 공유 +116%](https://support.duolingo.com/hc/en-us/articles/4404225309581-How-does-the-referral-program-work-)
+- [Busuu 레퍼럴 — 최대 12명/1년 무료, 30일 체험](https://www.busuu.com/en/referral-terms-and-conditions)
+- [Babbel 레퍼럴 — 친구 3개월+ 결제 시, 추천인 €10 카드/친구 1개월](https://support.babbel.com/hc/en-us/articles/360046073732-How-do-I-refer-a-friend-to-Babbel-)
 - [드롭박스 레퍼럴 — 제품형 보상으로 3900% 성장](https://growsurf.com/blog/dropbox-referral-program/)
+- [모바일 앱 레퍼럴 구축(IAP 관점)](https://www.revenuecat.com/blog/growth/how-to-build-a-referral-program-for-mobile-apps/)
 - [SaaS 레퍼럴 — 양방향 78%, 무료 1개월, 선물 프레이밍, 첫 결제 시 지급](https://impact.com/referral/saas-referral-program-guide/)
 - [레퍼럴 어뷰징 방어 — 첫 결제·쿨링오프 후 지급](https://www.buyapowa.com/blog/referral-programs-fraud-gaming/)
 - [에듀테크 레퍼럴 — 양방향 보상 권고](https://referralrock.com/blog/education-referral-programs/)
