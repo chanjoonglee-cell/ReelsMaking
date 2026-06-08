@@ -1,7 +1,7 @@
 {
   "generatedAt": "2026-06-08",
   "dateRangeDays": 30,
-  "note": "Mixpanel LanguageForest(프로젝트 3848333)에서 추출한 실데이터 스냅샷. 라이브 키 연동 전까지 이 값을 사용한다.",
+  "note": "Mixpanel LanguageForest(프로젝트 3848333) 실데이터 스냅샷. 라이브 키 연동 전/실패 시 폴백.",
   "funnels": {
     "onboarding": {
       "name": "온보딩 → 활성화",
@@ -33,21 +33,28 @@
     }
   },
   "retention": {
-    "name": "리텐션 (온보딩 완료 → 재방문)",
-    "unit": "week",
-    "periods": ["W0", "W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8"],
-    "series": {
-      "전체": { "cohortSize": 218, "rates": [0.49, 0.12, 0.05, 0.04, 0.04, 0.02, 0.03, 0.01, 0] },
-      "구독자": { "cohortSize": 5, "rates": [1, 0.75, 0.38, 0.17, 0, 0, 0, 0, 0] },
-      "비구독": { "cohortSize": 151, "rates": [0.59, 0.18, 0.07, 0.12, 0.25, 0.2, 0.25, 0.1, 0] },
-      "미설정": { "cohortSize": 100, "rates": [0.37, 0.02, 0, 0.01, 0.01, 0, 0, 0, 0] }
-    }
-  },
-  "baseline": {
-    "purchaseConversionRate": 0.0265,
-    "arppu": 52272,
-    "arpu": 1389,
-    "cumulativeRevenue": 1306800,
-    "source": "Slack #data_analysis (2025-12-22, MySQL 기준). LTV 확정은 RevenueCat 연동 후."
+    "milestones": ["D1", "D7", "D30", "D90"],
+    "note": "D1/D7/D30 = 일 코호트(on-day) 기준 · 최근 90일. D90 = 월 코호트(M3) 기준. 세그먼트는 표본이 작아 변동이 큽니다.",
+    "groups": [
+      {
+        "label": "전체",
+        "rows": [
+          { "name": "전체 유저", "cohortSize": 2000, "values": [0.12, 0.03, 0.01, 0.02] }
+        ]
+      },
+      {
+        "label": "국가별",
+        "rows": [
+          { "name": "🇰🇷 한국", "cohortSize": 342, "values": [0.07, 0.03, 0.01, null] },
+          { "name": "🇺🇸 미국", "cohortSize": 127, "values": [0.08, 0.01, 0.0, null] }
+        ]
+      },
+      {
+        "label": "결제 여부",
+        "rows": [
+          { "name": "💳 결제 유저", "cohortSize": 23, "values": [0.34, 0.17, 0.0, null], "small": true }
+        ]
+      }
+    ]
   }
 }

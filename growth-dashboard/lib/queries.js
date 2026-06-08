@@ -30,20 +30,39 @@ export const FUNNELS = {
   },
 };
 
+// 리텐션: 초기 행동(born) → 재방문(app_open)을 D1/D7/D30/D90 마일스톤으로.
+//  - D1/D7/D30: 일(day) 코호트 (Mixpanel on-day, 일 리텐션 최대 60일)
+//  - D90: 월(month) 코호트 M3 (일 단위로는 60일 상한이라 불가)
 export const RETENTION = {
   id: "retention",
-  name: "리텐션 (온보딩 완료 → 재방문)",
-  born: "onboarding_completed",
+  name: "리텐션 (재방문)",
   returning: "app_open",
-  unit: "week",
-  breakdown: "is_subscribed",
+  milestones: [1, 7, 30, 90],
+  // 세그먼트별 born 이벤트 / 필터(born_where)
+  segments: [
+    { group: "전체", name: "전체 유저", born: "onboarding_completed" },
+    {
+      group: "국가별",
+      name: "🇰🇷 한국",
+      born: "onboarding_completed",
+      bornWhere: 'properties["mp_country_code"]=="South Korea"',
+    },
+    {
+      group: "국가별",
+      name: "🇺🇸 미국",
+      born: "onboarding_completed",
+      bornWhere: 'properties["mp_country_code"]=="United States"',
+    },
+    {
+      group: "결제 여부",
+      name: "💳 결제 유저",
+      born: "subscription_purchase_completed",
+      small: true,
+    },
+  ],
 };
 
-// 세그먼트 축으로 쓸 수 있는 Mixpanel 유저 속성
-export const SEGMENTS = {
-  acquisition_source: { label: "유입 채널" },
-  is_subscribed: { label: "구독 여부" },
-  subscription_plan: { label: "구독 플랜" },
-};
+// 국가 코드 속성은 풀네임으로 저장됨 (예: "South Korea", "United States")
+export const COUNTRY_PROPERTY = "mp_country_code";
 
 export const PROJECT_ID = process.env.MIXPANEL_PROJECT_ID || "3848333";

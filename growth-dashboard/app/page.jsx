@@ -2,17 +2,17 @@ import { getDashboardData } from "@/lib/mixpanel";
 import KpiCard from "@/components/KpiCard";
 import FunnelChart from "@/components/FunnelChart";
 import PaywallFunnel from "@/components/PaywallFunnel";
-import RetentionCurve from "@/components/RetentionCurve";
+import RetentionMilestones from "@/components/RetentionMilestones";
 
 export const revalidate = 3600; // 1시간 캐시 (Mixpanel API 한도 보호)
 
 function pct(n) {
-  return `${Math.round(n * 100)}%`;
+  return n == null ? "—" : `${Math.round(n * 100)}%`;
 }
 
 export default async function Page() {
   const data = await getDashboardData();
-  const { funnels, retention, baseline } = data;
+  const { funnels, retention } = data;
 
   const onb = funnels.onboarding.steps;
   const onbCompletion = onb[1].count / onb[0].count;
@@ -21,7 +21,9 @@ export default async function Page() {
   const pw = funnels.paywall.overall;
   const paywallConv = pw[2].count / pw[0].count;
 
-  const w1Retention = retention.series["전체"].rates[1];
+  // 전체 리텐션 D1 (KPI용)
+  const overallRow = retention.groups.find((g) => g.label === "전체")?.rows[0];
+  const d1 = overallRow?.values?.[0];
 
   return (
     <main className="max-w-5xl mx-auto px-5 py-8">
@@ -45,9 +47,7 @@ export default async function Page() {
                 : `Mixpanel 라이브 · ${data.generatedAt}`}
           </span>
         </div>
-        <p className="text-sm text-slate-500 mt-1">
-          Phase 1 · Mixpanel 퍼널 / 리텐션 (최근 {data.dateRangeDays}일)
-        </p>
+        <p className="text-sm text-slate-500 mt-1">Phase 1 · Mixpanel 퍼널 / 리텐션</p>
       </header>
 
       {/* KPI 카드 */}
@@ -55,14 +55,14 @@ export default async function Page() {
         <KpiCard label="온보딩 완료율" value={pct(onbCompletion)} sub="시작 → 완료" accent="amber" />
         <KpiCard label="활성화율" value={pct(onbActivation)} sub="시작 → 첫 연습" accent="rose" />
         <KpiCard label="페이월 결제전환" value={pct(paywallConv)} sub="플랜조회 → 결제" accent="emerald" />
-        <KpiCard label="1주 리텐션" value={pct(w1Retention)} sub="전체 코호트" accent="sky" />
+        <KpiCard label="D1 리텐션" value={pct(d1)} sub="전체 코호트" accent="sky" />
       </section>
 
-      {/* 퍼널 2종 */}
+      {/* 퍼널 2종 (세로 막대) */}
       <section className="grid md:grid-cols-2 gap-5 mb-8">
         <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
           <h2 className="font-semibold mb-1">{funnels.onboarding.name}</h2>
-          <p className="text-xs text-slate-400 mb-4">{funnels.onboarding.description}</p>
+          <p className="text-xs text-slate-400 mb-6">{funnels.onboarding.description}</p>
           <FunnelChart steps={onb} />
         </div>
 
@@ -77,33 +77,11 @@ export default async function Page() {
         </div>
       </section>
 
-      {/* 리텐션 */}
-      <section className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm mb-8">
-        <h2 className="font-semibold mb-1">{retention.name}</h2>
-        <p className="text-xs text-slate-400 mb-4">
-          구독 여부별 주간 리텐션 · 진할수록 잔존율 높음
-        </p>
-        <RetentionCurve retention={retention} />
-      </section>
-
-      {/* 매출 베이스라인 (참고) */}
+      {/* 리텐션 — D1/D7/D30/D90, 국가별/결제유저 */}
       <section className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-        <h2 className="font-semibold mb-1">매출 베이스라인 (참고)</h2>
-        <p className="text-xs text-slate-400 mb-4">{baseline.source}</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiCard label="결제 전환율" value={pct(baseline.purchaseConversionRate)} accent="slate" />
-          <KpiCard label="ARPPU" value={`${baseline.arppu.toLocaleString()}원`} accent="slate" />
-          <KpiCard label="ARPU" value={`${baseline.arpu.toLocaleString()}원`} accent="slate" />
-          <KpiCard
-            label="누적 매출"
-            value={`${baseline.cumulativeRevenue.toLocaleString()}원`}
-            accent="slate"
-          />
-        </div>
-        <p className="text-xs text-slate-400 mt-4">
-          ⏭️ Phase 2에서 RevenueCat 연동 → 실시간 매출·LTV로 대체. Phase 3에서 AppsFlyer
-          광고비 연동 → CAC, LTV/CAC 완성.
-        </p>
+        <h2 className="font-semibold mb-1">리텐션 (재방문)</h2>
+        <p className="text-xs text-slate-400 mb-4">{retention.note}</p>
+        <RetentionMilestones milestones={retention.milestones} groups={retention.groups} />
       </section>
     </main>
   );

@@ -1,9 +1,10 @@
-// 퍼널 단계별 가로 막대. steps: [{ label, count }]
+// 세로 막대 퍼널 — x축: 단계, y축: 전환율(첫 단계 대비 %).
 export default function FunnelChart({ steps }) {
   const top = steps[0]?.count || 1;
+  const BAR_AREA = 160; // px
 
   return (
-    <div className="space-y-3">
+    <div className="flex items-stretch justify-between gap-3">
       {steps.map((s, i) => {
         const pctOfTop = Math.round((s.count / top) * 100);
         const stepConv =
@@ -12,25 +13,27 @@ export default function FunnelChart({ steps }) {
             : Math.round((s.count / steps[i - 1].count) * 100);
 
         return (
-          <div key={i}>
-            <div className="flex justify-between text-sm mb-1">
-              <span className="font-medium">
-                {i + 1}. {s.label}
-              </span>
-              <span className="text-slate-500">
-                {s.count.toLocaleString()}명
-                {stepConv !== null && (
-                  <span className="ml-2 text-slate-400">직전 대비 {stepConv}%</span>
-                )}
-              </span>
-            </div>
-            <div className="h-7 bg-slate-100 rounded overflow-hidden">
+          <div key={i} className="flex-1 flex flex-col items-center">
+            {/* 막대 영역 (고정 높이, 바닥 정렬) */}
+            <div className="flex items-end w-full" style={{ height: BAR_AREA }}>
               <div
-                className="h-7 bg-emerald-500 rounded flex items-center px-2 text-white text-xs font-medium transition-all"
-                style={{ width: `${Math.max(pctOfTop, 7)}%` }}
+                className="w-3/5 mx-auto bg-emerald-500 rounded-t relative transition-all"
+                style={{ height: `${Math.max(pctOfTop, 2)}%` }}
               >
-                {pctOfTop}%
+                <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-semibold text-emerald-700">
+                  {pctOfTop}%
+                </span>
               </div>
+            </div>
+            {/* x축 라벨 */}
+            <div className="mt-2 text-center">
+              <div className="text-xs font-medium text-slate-700 leading-tight">
+                {i + 1}. {s.label}
+              </div>
+              <div className="text-xs text-slate-400">{s.count.toLocaleString()}명</div>
+              {stepConv !== null && (
+                <div className="text-[10px] text-slate-400">직전 대비 {stepConv}%</div>
+              )}
             </div>
           </div>
         );

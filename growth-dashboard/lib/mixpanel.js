@@ -7,7 +7,7 @@
 //
 // 라이브로 가져오는 것:
 //  - 온보딩 퍼널: 저장된 funnel_id (기본 87198134 "온보딩 전환율")
-//  - 리텐션: onboarding_completed → app_open, 구독 여부(is_subscribed)별
+//  - 리텐션: born → app_open, 세그먼트별 D1/D7/D30(일 코호트) + D90(월 M3)
 //  - 페이월 퍼널: 저장된 funnel_id 가 .env 에 있으면 라이브, 없으면 스냅샷
 //
 // 인증: Service Account → Basic base64(username:secret)
@@ -15,11 +15,12 @@
 // ─────────────────────────────────────────────────────────────
 
 import snapshot from "@/data/snapshot.json";
-import { PROJECT_ID } from "@/lib/queries";
+import { PROJECT_ID, RETENTION } from "@/lib/queries";
 
 const API_HOST = process.env.MIXPANEL_API_HOST || "https://mixpanel.com";
 const ONBOARDING_FUNNEL_ID = process.env.MIXPANEL_ONBOARDING_FUNNEL_ID || "87198134";
 const PAYWALL_FUNNEL_ID = process.env.MIXPANEL_PAYWALL_FUNNEL_ID || "";
+const RETURN_EVENT = RETENTION.returning; // app_open
 
 function authHeader() {
   const user = process.env.MIXPANEL_SERVICE_ACCOUNT_USERNAME;
@@ -61,8 +62,8 @@ async function query(path, params) {
   return res.json();
 }
 
-// 저장된 퍼널을 가져와 단계 인덱스별 count 합계로 집계한다.
-// (날짜 버킷이 여러 개면 합산 → 기간 전체 단계별 전환 수)
+// ── 퍼널 ──────────────────────────────────────────────────────
+// 저장된 퍼널을 가져와 단계 인덱스별 count 합계로 집계.
 async function fetchFunnelCounts(funnelId, days) {
   const { from_date, to_date } = dateRange(days);
   const json = await query("/api/2.0/funnels", { funnel_id: funnelId, from_date, to_date });
@@ -74,25 +75,14 @@ async function fetchFunnelCounts(funnelId, days) {
       totals[i] = (totals[i] || 0) + (s.count || 0);
     });
   }
-  return totals; // [step0Count, step1Count, ...]
+  return totals;
 }
 
-// 리텐션: 코호트들을 가중 평균해 하나의 곡선으로.
-async function fetchRetentionSeries(bornEvent, returnEvent, { days, where } = {}) {
-  const { from_date, to_date } = dateRange(days);
-  const json = await query("/api/2.0/retention", {
-    from_date,
-    to_date,
-    born_event: bornEvent,
-    event: returnEvent,
-    unit: "week",
-    interval_count: 8,
-    retention_type: "birth",
-    where,
-  });
+// ── 리텐션 ────────────────────────────────────────────────────
+// 코호트들을 가중 평균해 하나의 곡선(rates)과 코호트 크기로.
+function averageCurve(json) {
   const cohorts = Object.values(json).filter((c) => c && Array.isArray(c.counts));
-  if (!cohorts.length) return null;
-
+  if (!cohorts.length) return { cohortSize: 0, rates: [] };
   const maxLen = Math.max(...cohorts.map((c) => c.counts.length));
   const rates = [];
   for (let i = 0; i < maxLen; i++) {
@@ -108,6 +98,71 @@ async function fetchRetentionSeries(bornEvent, returnEvent, { days, where } = {}
   }
   const cohortSize = cohorts.reduce((a, c) => a + (c.first || 0), 0);
   return { cohortSize, rates };
+}
+
+async function fetchRetentionCurve(bornEvent, { unit, intervalCount, days, bornWhere }) {
+  const { from_date, to_date } = dateRange(days);
+  const json = await query("/api/2.0/retention", {
+    from_date,
+    to_date,
+    born_event: bornEvent,
+    event: RETURN_EVENT,
+    unit,
+    interval_count: intervalCount,
+    retention_type: "birth",
+    born_where: bornWhere,
+  });
+  return averageCurve(json);
+}
+
+// 세그먼트 1개의 D1/D7/D30/D90 한 줄을 만든다.
+async function fetchRetentionRow(seg) {
+  // D1/D7/D30 — 일 코호트 (최근 90일, 일 리텐션 최대 60일)
+  const day = await fetchRetentionCurve(seg.born, {
+    unit: "day",
+    intervalCount: 60,
+    days: 90,
+    bornWhere: seg.bornWhere,
+  });
+  // D90 — 월 코호트 M3 (실패해도 무시)
+  let d90 = null;
+  try {
+    const month = await fetchRetentionCurve(seg.born, {
+      unit: "month",
+      intervalCount: 3,
+      days: 150,
+      bornWhere: seg.bornWhere,
+    });
+    d90 = month.rates[3] ?? null;
+  } catch {
+    /* D90 없으면 — 표시 */
+  }
+  return {
+    name: seg.name,
+    group: seg.group,
+    cohortSize: day.cohortSize,
+    values: [day.rates[1] ?? null, day.rates[7] ?? null, day.rates[30] ?? null, d90],
+    small: Boolean(seg.small),
+  };
+}
+
+// 세그먼트 정의(queries.js)대로 전 세그먼트 리텐션을 가져와 그룹으로 묶는다.
+async function fetchRetention() {
+  const rows = await Promise.all(RETENTION.segments.map((seg) => fetchRetentionRow(seg)));
+  const order = [];
+  const byGroup = {};
+  for (const row of rows) {
+    if (!byGroup[row.group]) {
+      byGroup[row.group] = { label: row.group, rows: [] };
+      order.push(row.group);
+    }
+    byGroup[row.group].rows.push(row);
+  }
+  return {
+    milestones: ["D1", "D7", "D30", "D90"],
+    note: snapshot.retention.note,
+    groups: order.map((g) => byGroup[g]),
+  };
 }
 
 /**
@@ -126,11 +181,10 @@ export async function getDashboardData() {
     dateRangeDays: days,
     funnels: structuredClone(snapshot.funnels),
     retention: structuredClone(snapshot.retention),
-    baseline: snapshot.baseline,
     partial: false,
   };
 
-  // 1) 온보딩 퍼널 (라벨은 정의값 유지, count만 라이브로 교체)
+  // 1) 온보딩 퍼널 (라벨 유지, count만 라이브로 교체)
   try {
     const counts = await fetchFunnelCounts(ONBOARDING_FUNNEL_ID, days);
     if (counts.length) {
@@ -159,34 +213,12 @@ export async function getDashboardData() {
       result.partial = true;
     }
   } else {
-    // 저장된 페이월 퍼널이 없으면 채널별 분해는 스냅샷 유지
-    result.partial = true;
+    result.partial = true; // 채널별 페이월 분해는 스냅샷 유지
   }
 
-  // 3) 리텐션 (구독 여부별)
+  // 3) 리텐션 (세그먼트별 D1/D7/D30/D90)
   try {
-    const [overall, sub, nonsub] = await Promise.all([
-      fetchRetentionSeries("onboarding_completed", "app_open", { days: 56 }),
-      fetchRetentionSeries("onboarding_completed", "app_open", {
-        days: 56,
-        where: 'properties["is_subscribed"]==true',
-      }),
-      fetchRetentionSeries("onboarding_completed", "app_open", {
-        days: 56,
-        where: 'properties["is_subscribed"]==false',
-      }),
-    ]);
-
-    const series = {};
-    if (overall) series["전체"] = overall;
-    if (sub) series["구독자"] = sub;
-    if (nonsub) series["비구독"] = nonsub;
-
-    if (Object.keys(series).length) {
-      const len = (overall || sub || nonsub).rates.length;
-      result.retention.series = series;
-      result.retention.periods = Array.from({ length: len }, (_, i) => `W${i}`);
-    }
+    result.retention = await fetchRetention();
   } catch (e) {
     console.warn("[mixpanel] 리텐션 라이브 실패 → 스냅샷:", e.message);
     result.partial = true;
