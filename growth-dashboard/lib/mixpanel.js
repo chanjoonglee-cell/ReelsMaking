@@ -138,7 +138,7 @@ async function fetchSeriesCurve(seg, fromDate) {
   const params = {
     from_date: fromDate,
     to_date: today(),
-    born_event: RETENTION_BORN,
+    born_event: seg.born || RETENTION_BORN, // 시리즈별 born 덮어쓰기(예: 학습 완주자)
     event: RETENTION_RETURN,
     unit: "day",
     interval_count: RETENTION_MAX_DAY,
@@ -159,7 +159,7 @@ async function fetchSeriesCurve(seg, fromDate) {
  * @param {string} [since] 가입일 시작(YYYY-MM-DD). 없으면 최근 90일.
  */
 export async function getRetentionDimension(dimKey, since) {
-  const fromDate = since || daysAgo(90);
+  const fromDate = since || daysAgo(30);
 
   if (!isLiveConfigured()) {
     const snap =

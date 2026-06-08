@@ -5,7 +5,7 @@ import LineChart from "./LineChart";
 
 const DIMS = [
   { key: "overall", label: "전체" },
-  { key: "activity", label: "활성화 (3일 1회+)" },
+  { key: "completion", label: "학습 완주여부" },
   { key: "country", label: "국가별" },
   { key: "gender", label: "성별" },
   { key: "age", label: "나이대" },
@@ -64,23 +64,6 @@ export default function RetentionExplorer({ initial }) {
             ))}
           </select>
         </label>
-        <label className="text-sm text-slate-500">
-          가입일 이후&nbsp;
-          <input
-            type="date"
-            value={since}
-            onChange={(e) => setSince(e.target.value)}
-            className="border border-slate-300 rounded px-2 py-1 text-sm text-slate-800"
-          />
-        </label>
-        {since && (
-          <button
-            onClick={() => setSince("")}
-            className="text-xs text-slate-400 underline"
-          >
-            최근 90일로 초기화
-          </button>
-        )}
         {loading && <span className="text-xs text-slate-400">불러오는 중…</span>}
       </div>
 

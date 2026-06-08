@@ -31,29 +31,28 @@ export const FUNNELS = {
 };
 
 // ── 리텐션 정의 ───────────────────────────────────────────────
-// 신규가입자 리텐션: 가입(온보딩 완료) → 앱오픈 재방문, 일 코호트(on-day) D1~D30.
-// 가입일 since(from_date)를 설정해 "특정 날짜 이후 가입자"만 볼 수 있다.
-export const RETENTION_BORN = "onboarding_completed"; // 코호트 진입(가입)
-export const RETENTION_RETURN = "app_open"; // 재방문 판정
+// 리텐션: 앱오픈(app_open) → 홈 체류(home_dwell) 재방문, 일 코호트(on-day) D1~D30.
+// (Mixpanel "User Retention" 리포트와 동일 정의)
+export const RETENTION_BORN = "app_open"; // 코호트 진입
+export const RETENTION_RETURN = "home_dwell"; // 재방문 판정
 export const RETENTION_MAX_DAY = 30;
 export const RETENTION_NOTE =
-  "가입(온보딩 완료) → 앱오픈 재방문 · 일 코호트(on-day) · D1~D30";
+  "앱오픈 → 홈 체류(home_dwell) · 일 코호트(on-day) · 최근 30일";
 
 // Mixpanel where 표현식 규칙:
 //  - 이벤트 속성: properties["..."]   (예: mp_country_code)
 //  - 유저 속성:   user["..."]         (예: gender, age, is_subscribed)
+// 시리즈별로 born(코호트 진입 이벤트)을 덮어쓸 수 있다(예: 학습 완주자).
 export const RETENTION_DIMENSIONS = {
   overall: {
     label: "전체",
     series: [{ name: "전체 유저" }],
   },
-  activity: {
-    label: "활성화 (3일 1회+)",
-    // "3일에 1회 이상 방문"은 Mixpanel 행동 코호트로만 정확히 표현된다.
-    // 코호트를 만들어 ID를 MIXPANEL_ACTIVE_COHORT_ID 에 넣으면 활성 라인이 채워진다.
+  completion: {
+    label: "학습 완주여부",
     series: [
       { name: "전체" },
-      { name: "활성 유저", cohortIdEnv: "MIXPANEL_ACTIVE_COHORT_ID" },
+      { name: "🎓 학습 완주자", born: "practice_session_completed" },
     ],
   },
   country: {
@@ -67,15 +66,15 @@ export const RETENTION_DIMENSIONS = {
   gender: {
     label: "성별",
     series: [
-      { name: "남성", where: 'user["gender"]=="male"' },
-      { name: "여성", where: 'user["gender"]=="female"' },
-      { name: "기타", where: 'user["gender"]=="other"' },
+      { name: "👩 여성", where: 'user["gender"]=="female"' },
+      { name: "👨 남성", where: 'user["gender"]=="male"', small: true },
+      { name: "기타", where: 'user["gender"]=="other"', small: true },
     ],
   },
   age: {
     label: "나이대",
     series: [
-      { name: "~19세", where: 'user["age"]<20' },
+      { name: "~19세", where: 'user["age"]<20', small: true },
       { name: "20대", where: 'user["age"]>=20 and user["age"]<30' },
       { name: "30대", where: 'user["age"]>=30 and user["age"]<40' },
       { name: "40대+", where: 'user["age"]>=40' },
@@ -93,7 +92,7 @@ export const RETENTION_DIMENSIONS = {
 // UI 드롭다운 순서/라벨
 export const RETENTION_DIMENSION_LIST = [
   { key: "overall", label: "전체" },
-  { key: "activity", label: "활성화 (3일 1회+)" },
+  { key: "completion", label: "학습 완주여부" },
   { key: "country", label: "국가별" },
   { key: "gender", label: "성별" },
   { key: "age", label: "나이대" },
