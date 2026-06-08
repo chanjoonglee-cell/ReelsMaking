@@ -39,7 +39,11 @@ function authHeader() {
 }
 
 export function isLiveConfigured() {
-  return Boolean(authHeader() && PROJECT_ID);
+  // 플랜이 Query API를 막고 있어 기본은 내장 실데이터(스냅샷) 사용.
+  // Mixpanel 플랜을 올려 Query API가 열리면 MIXPANEL_QUERY_API_ENABLED=true 로 라이브 전환.
+  return Boolean(
+    authHeader() && PROJECT_ID && process.env.MIXPANEL_QUERY_API_ENABLED === "true"
+  );
 }
 
 function today() {

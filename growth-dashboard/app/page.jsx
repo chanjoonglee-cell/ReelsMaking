@@ -42,7 +42,7 @@ export default async function Page() {
             }`}
           >
             {data.source === "snapshot"
-              ? `스냅샷 데이터 · ${data.generatedAt} 기준`
+              ? `실데이터 · ${data.generatedAt} (MCP 추출)`
               : data.partial
                 ? `Mixpanel 라이브 (일부 스냅샷) · ${data.generatedAt}`
                 : `Mixpanel 라이브 · ${data.generatedAt}`}
