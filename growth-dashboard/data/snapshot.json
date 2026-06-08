@@ -1,0 +1,53 @@
+{
+  "generatedAt": "2026-06-08",
+  "dateRangeDays": 30,
+  "note": "Mixpanel LanguageForest(프로젝트 3848333)에서 추출한 실데이터 스냅샷. 라이브 키 연동 전까지 이 값을 사용한다.",
+  "funnels": {
+    "onboarding": {
+      "name": "온보딩 → 활성화",
+      "description": "시작화면 진입부터 첫 연습 완료(활성화)까지 · 최근 30일 · 전환창 7일",
+      "steps": [
+        { "label": "온보딩 시작", "event": "onboarding_get_started_viewed", "count": 440 },
+        { "label": "온보딩 완료", "event": "onboarding_completed", "count": 130 },
+        { "label": "첫 연습 완료(활성화)", "event": "practice_session_completed", "count": 41 }
+      ]
+    },
+    "paywall": {
+      "name": "페이월 → 결제",
+      "description": "구독 플랜 조회부터 결제 완료까지 · 최근 30일 · 전환창 7일",
+      "stepLabels": ["플랜 조회", "결제 시작", "결제 완료"],
+      "overall": [
+        { "label": "플랜 조회", "event": "subscription_plans_viewed", "count": 99 },
+        { "label": "결제 시작", "event": "subscription_purchase_started", "count": 35 },
+        { "label": "결제 완료", "event": "subscription_purchase_completed", "count": 16 }
+      ],
+      "bySource": {
+        "instagram_ad": [47, 17, 10],
+        "store_search": [26, 6, 2],
+        "other": [9, 3, 1],
+        "undefined": [7, 6, 3],
+        "friend_sns": [5, 2, 0],
+        "friend_referral": [3, 1, 0],
+        "ingnyangi_sns": [2, 0, 0]
+      }
+    }
+  },
+  "retention": {
+    "name": "리텐션 (온보딩 완료 → 재방문)",
+    "unit": "week",
+    "periods": ["W0", "W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8"],
+    "series": {
+      "전체": { "cohortSize": 218, "rates": [0.49, 0.12, 0.05, 0.04, 0.04, 0.02, 0.03, 0.01, 0] },
+      "구독자": { "cohortSize": 5, "rates": [1, 0.75, 0.38, 0.17, 0, 0, 0, 0, 0] },
+      "비구독": { "cohortSize": 151, "rates": [0.59, 0.18, 0.07, 0.12, 0.25, 0.2, 0.25, 0.1, 0] },
+      "미설정": { "cohortSize": 100, "rates": [0.37, 0.02, 0, 0.01, 0.01, 0, 0, 0, 0] }
+    }
+  },
+  "baseline": {
+    "purchaseConversionRate": 0.0265,
+    "arppu": 52272,
+    "arpu": 1389,
+    "cumulativeRevenue": 1306800,
+    "source": "Slack #data_analysis (2025-12-22, MySQL 기준). LTV 확정은 RevenueCat 연동 후."
+  }
+}
