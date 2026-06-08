@@ -33,12 +33,16 @@ export default async function Page() {
             className={`text-xs px-2 py-1 rounded-full ${
               data.source === "snapshot"
                 ? "bg-amber-100 text-amber-700"
-                : "bg-emerald-100 text-emerald-700"
+                : data.partial
+                  ? "bg-sky-100 text-sky-700"
+                  : "bg-emerald-100 text-emerald-700"
             }`}
           >
             {data.source === "snapshot"
               ? `스냅샷 데이터 · ${data.generatedAt} 기준`
-              : "Mixpanel 라이브"}
+              : data.partial
+                ? `Mixpanel 라이브 (일부 스냅샷) · ${data.generatedAt}`
+                : `Mixpanel 라이브 · ${data.generatedAt}`}
           </span>
         </div>
         <p className="text-sm text-slate-500 mt-1">
