@@ -1,26 +1,29 @@
 // ─────────────────────────────────────────────────────────────
 // Mixpanel 커넥터
 //
-// 동작 방식:
 //  - Service Account 키가 .env 에 있으면 → Mixpanel Query API 라이브 호출
-//  - 키가 없거나 호출 실패 시 → data/snapshot.json 의 실데이터로 (섹션별) 폴백
+//  - 키가 없거나 호출 실패 시 → data/snapshot.json 으로 (섹션별) 폴백
 //
-// 라이브로 가져오는 것:
-//  - 온보딩 퍼널: 저장된 funnel_id (기본 87198134 "온보딩 전환율")
-//  - 리텐션: born → app_open, 세그먼트별 D1/D7/D30(일 코호트) + D90(월 M3)
-//  - 페이월 퍼널: 저장된 funnel_id 가 .env 에 있으면 라이브, 없으면 스냅샷
+// 퍼널: 저장된 funnel_id (getDashboardData)
+// 리텐션: 가입 → 앱오픈, 차원별 D1~D30 곡선 (getRetentionDimension)
 //
 // 인증: Service Account → Basic base64(username:secret)
-// 데이터 레지던시: 기본 US(mixpanel.com). EU 프로젝트면 MIXPANEL_API_HOST 변경.
+// 레지던시: 기본 US(mixpanel.com). EU면 MIXPANEL_API_HOST 변경.
 // ─────────────────────────────────────────────────────────────
 
 import snapshot from "@/data/snapshot.json";
-import { PROJECT_ID, RETENTION } from "@/lib/queries";
+import {
+  PROJECT_ID,
+  RETENTION_BORN,
+  RETENTION_RETURN,
+  RETENTION_MAX_DAY,
+  RETENTION_NOTE,
+  RETENTION_DIMENSIONS,
+} from "@/lib/queries";
 
 const API_HOST = process.env.MIXPANEL_API_HOST || "https://mixpanel.com";
 const ONBOARDING_FUNNEL_ID = process.env.MIXPANEL_ONBOARDING_FUNNEL_ID || "87198134";
 const PAYWALL_FUNNEL_ID = process.env.MIXPANEL_PAYWALL_FUNNEL_ID || "";
-const RETURN_EVENT = RETENTION.returning; // app_open
 
 function authHeader() {
   const user = process.env.MIXPANEL_SERVICE_ACCOUNT_USERNAME;
@@ -37,12 +40,10 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function dateRange(days) {
-  const to = new Date();
-  const from = new Date();
-  from.setDate(to.getDate() - days);
-  const fmt = (d) => d.toISOString().slice(0, 10);
-  return { from_date: fmt(from), to_date: fmt(to) };
+function daysAgo(days) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
 }
 
 async function query(path, params) {
@@ -53,7 +54,7 @@ async function query(path, params) {
   }
   const res = await fetch(url, {
     headers: { Authorization: authHeader(), Accept: "application/json" },
-    next: { revalidate: 3600 }, // 1시간 캐시 (API 한도 보호)
+    next: { revalidate: 3600 },
   });
   if (!res.ok) {
     const body = await res.text();
@@ -63,10 +64,12 @@ async function query(path, params) {
 }
 
 // ── 퍼널 ──────────────────────────────────────────────────────
-// 저장된 퍼널을 가져와 단계 인덱스별 count 합계로 집계.
 async function fetchFunnelCounts(funnelId, days) {
-  const { from_date, to_date } = dateRange(days);
-  const json = await query("/api/2.0/funnels", { funnel_id: funnelId, from_date, to_date });
+  const json = await query("/api/2.0/funnels", {
+    funnel_id: funnelId,
+    from_date: daysAgo(days),
+    to_date: today(),
+  });
   const totals = [];
   for (const date of Object.keys(json.data || {})) {
     const bucket = json.data[date] || {};
@@ -79,7 +82,7 @@ async function fetchFunnelCounts(funnelId, days) {
 }
 
 // ── 리텐션 ────────────────────────────────────────────────────
-// 코호트들을 가중 평균해 하나의 곡선(rates)과 코호트 크기로.
+// 코호트들을 가중 평균해 하나의 곡선(rates[0..maxDay])과 코호트 크기로.
 function averageCurve(json) {
   const cohorts = Object.values(json).filter((c) => c && Array.isArray(c.counts));
   if (!cohorts.length) return { cohortSize: 0, rates: [] };
@@ -100,74 +103,83 @@ function averageCurve(json) {
   return { cohortSize, rates };
 }
 
-async function fetchRetentionCurve(bornEvent, { unit, intervalCount, days, bornWhere }) {
-  const { from_date, to_date } = dateRange(days);
-  const json = await query("/api/2.0/retention", {
-    from_date,
-    to_date,
-    born_event: bornEvent,
-    event: RETURN_EVENT,
-    unit,
-    interval_count: intervalCount,
-    retention_type: "birth",
-    born_where: bornWhere,
-  });
-  return averageCurve(json);
-}
-
-// 세그먼트 1개의 D1/D7/D30/D90 한 줄을 만든다.
-async function fetchRetentionRow(seg) {
-  // D1/D7/D30 — 일 코호트 (최근 90일, 일 리텐션 최대 60일)
-  const day = await fetchRetentionCurve(seg.born, {
+async function fetchSeriesCurve(seg, fromDate) {
+  const params = {
+    from_date: fromDate,
+    to_date: today(),
+    born_event: RETENTION_BORN,
+    event: RETENTION_RETURN,
     unit: "day",
-    intervalCount: 60,
-    days: 90,
-    bornWhere: seg.bornWhere,
-  });
-  // D90 — 월 코호트 M3 (실패해도 무시)
-  let d90 = null;
-  try {
-    const month = await fetchRetentionCurve(seg.born, {
-      unit: "month",
-      intervalCount: 3,
-      days: 150,
-      bornWhere: seg.bornWhere,
-    });
-    d90 = month.rates[3] ?? null;
-  } catch {
-    /* D90 없으면 — 표시 */
-  }
-  return {
-    name: seg.name,
-    group: seg.group,
-    cohortSize: day.cohortSize,
-    values: [day.rates[1] ?? null, day.rates[7] ?? null, day.rates[30] ?? null, d90],
-    small: Boolean(seg.small),
+    interval_count: RETENTION_MAX_DAY,
+    retention_type: "birth",
   };
+  if (seg.where) params.born_where = seg.where;
+  if (seg.cohortIdEnv && process.env[seg.cohortIdEnv]) {
+    params.filter_by_cohort = JSON.stringify({ id: Number(process.env[seg.cohortIdEnv]) });
+  }
+  const json = await query("/api/2.0/retention", params);
+  const { cohortSize, rates } = averageCurve(json);
+  return { name: seg.name, cohortSize, rates, small: Boolean(seg.small) };
 }
 
-// 세그먼트 정의(queries.js)대로 전 세그먼트 리텐션을 가져와 그룹으로 묶는다.
-async function fetchRetention() {
-  const rows = await Promise.all(RETENTION.segments.map((seg) => fetchRetentionRow(seg)));
-  const order = [];
-  const byGroup = {};
-  for (const row of rows) {
-    if (!byGroup[row.group]) {
-      byGroup[row.group] = { label: row.group, rows: [] };
-      order.push(row.group);
-    }
-    byGroup[row.group].rows.push(row);
+/**
+ * 한 차원(전체/국가/성별/나이/결제/활성화)의 D1~D30 리텐션 곡선들을 반환.
+ * @param {string} dimKey
+ * @param {string} [since] 가입일 시작(YYYY-MM-DD). 없으면 최근 90일.
+ */
+export async function getRetentionDimension(dimKey, since) {
+  const fromDate = since || daysAgo(90);
+
+  if (!isLiveConfigured()) {
+    const snap =
+      snapshot.retention.dimensions[dimKey] || snapshot.retention.dimensions.overall;
+    return {
+      source: "snapshot",
+      dimension: dimKey,
+      label: snap.label,
+      maxDay: RETENTION_MAX_DAY,
+      since: fromDate,
+      note: snapshot.retention.note,
+      liveOnly: Boolean(snap.liveOnly),
+      series: snap.series,
+    };
   }
+
+  const dim = RETENTION_DIMENSIONS[dimKey] || RETENTION_DIMENSIONS.overall;
+  const series = [];
+  for (const seg of dim.series) {
+    // 활성 유저는 행동 코호트 ID가 있어야 함
+    if (seg.cohortIdEnv && !process.env[seg.cohortIdEnv]) {
+      series.push({
+        name: seg.name,
+        cohortSize: 0,
+        rates: [],
+        unavailable: true,
+        reason: "활성 코호트 미설정 (MIXPANEL_ACTIVE_COHORT_ID)",
+      });
+      continue;
+    }
+    try {
+      series.push(await fetchSeriesCurve(seg, fromDate));
+    } catch (e) {
+      console.warn(`[mixpanel] 리텐션(${dimKey}/${seg.name}) 실패:`, e.message);
+      series.push({ name: seg.name, cohortSize: 0, rates: [], unavailable: true, reason: e.message });
+    }
+  }
+
   return {
-    milestones: ["D1", "D7", "D30", "D90"],
-    note: snapshot.retention.note,
-    groups: order.map((g) => byGroup[g]),
+    source: "live",
+    dimension: dimKey,
+    label: dim.label,
+    maxDay: RETENTION_MAX_DAY,
+    since: fromDate,
+    note: RETENTION_NOTE,
+    series,
   };
 }
 
 /**
- * 대시보드 데이터 반환. 라이브 키가 있으면 Query API에서 가져오고,
- * 섹션별로 실패하면 스냅샷으로 폴백한다.
+ * 퍼널 + 상태배지용 데이터. 리텐션은 getRetentionDimension 에서 별도 처리.
  */
 export async function getDashboardData() {
   if (!isLiveConfigured()) {
@@ -180,11 +192,9 @@ export async function getDashboardData() {
     generatedAt: today(),
     dateRangeDays: days,
     funnels: structuredClone(snapshot.funnels),
-    retention: structuredClone(snapshot.retention),
     partial: false,
   };
 
-  // 1) 온보딩 퍼널 (라벨 유지, count만 라이브로 교체)
   try {
     const counts = await fetchFunnelCounts(ONBOARDING_FUNNEL_ID, days);
     if (counts.length) {
@@ -198,7 +208,6 @@ export async function getDashboardData() {
     result.partial = true;
   }
 
-  // 2) 페이월 퍼널 (저장된 funnel_id 가 설정된 경우에만 라이브)
   if (PAYWALL_FUNNEL_ID) {
     try {
       const counts = await fetchFunnelCounts(PAYWALL_FUNNEL_ID, days);
@@ -213,14 +222,6 @@ export async function getDashboardData() {
       result.partial = true;
     }
   } else {
-    result.partial = true; // 채널별 페이월 분해는 스냅샷 유지
-  }
-
-  // 3) 리텐션 (세그먼트별 D1/D7/D30/D90)
-  try {
-    result.retention = await fetchRetention();
-  } catch (e) {
-    console.warn("[mixpanel] 리텐션 라이브 실패 → 스냅샷:", e.message);
     result.partial = true;
   }
 

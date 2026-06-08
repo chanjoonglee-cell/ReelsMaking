@@ -1,8 +1,8 @@
-import { getDashboardData } from "@/lib/mixpanel";
+import { getDashboardData, getRetentionDimension } from "@/lib/mixpanel";
 import KpiCard from "@/components/KpiCard";
 import FunnelChart from "@/components/FunnelChart";
 import PaywallFunnel from "@/components/PaywallFunnel";
-import RetentionMilestones from "@/components/RetentionMilestones";
+import RetentionExplorer from "@/components/RetentionExplorer";
 
 export const revalidate = 3600; // 1시간 캐시 (Mixpanel API 한도 보호)
 
@@ -11,8 +11,11 @@ function pct(n) {
 }
 
 export default async function Page() {
-  const data = await getDashboardData();
-  const { funnels, retention } = data;
+  const [data, overallRetention] = await Promise.all([
+    getDashboardData(),
+    getRetentionDimension("overall"),
+  ]);
+  const { funnels } = data;
 
   const onb = funnels.onboarding.steps;
   const onbCompletion = onb[1].count / onb[0].count;
@@ -21,9 +24,7 @@ export default async function Page() {
   const pw = funnels.paywall.overall;
   const paywallConv = pw[2].count / pw[0].count;
 
-  // 전체 리텐션 D1 (KPI용)
-  const overallRow = retention.groups.find((g) => g.label === "전체")?.rows[0];
-  const d1 = overallRow?.values?.[0];
+  const d1 = overallRetention.series?.[0]?.rates?.[1];
 
   return (
     <main className="max-w-5xl mx-auto px-5 py-8">
@@ -55,7 +56,7 @@ export default async function Page() {
         <KpiCard label="온보딩 완료율" value={pct(onbCompletion)} sub="시작 → 완료" accent="amber" />
         <KpiCard label="활성화율" value={pct(onbActivation)} sub="시작 → 첫 연습" accent="rose" />
         <KpiCard label="페이월 결제전환" value={pct(paywallConv)} sub="플랜조회 → 결제" accent="emerald" />
-        <KpiCard label="D1 리텐션" value={pct(d1)} sub="전체 코호트" accent="sky" />
+        <KpiCard label="D1 리텐션" value={pct(d1)} sub="신규가입 코호트" accent="sky" />
       </section>
 
       {/* 퍼널 2종 (세로 막대) */}
@@ -77,11 +78,13 @@ export default async function Page() {
         </div>
       </section>
 
-      {/* 리텐션 — D1/D7/D30/D90, 국가별/결제유저 */}
+      {/* 신규가입자 리텐션 — D1~D30, 세그먼트 전환 */}
       <section className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-        <h2 className="font-semibold mb-1">리텐션 (재방문)</h2>
-        <p className="text-xs text-slate-400 mb-4">{retention.note}</p>
-        <RetentionMilestones milestones={retention.milestones} groups={retention.groups} />
+        <h2 className="font-semibold mb-1">신규가입자 리텐션 (D1~D30)</h2>
+        <p className="text-xs text-slate-400 mb-4">
+          가입(온보딩 완료)일 기준 코호트가 이후 며칠째 다시 앱을 여는지 · 세그먼트/가입일 선택 가능
+        </p>
+        <RetentionExplorer initial={overallRetention} />
       </section>
     </main>
   );

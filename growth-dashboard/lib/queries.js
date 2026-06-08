@@ -30,39 +30,75 @@ export const FUNNELS = {
   },
 };
 
-// 리텐션: 초기 행동(born) → 재방문(app_open)을 D1/D7/D30/D90 마일스톤으로.
-//  - D1/D7/D30: 일(day) 코호트 (Mixpanel on-day, 일 리텐션 최대 60일)
-//  - D90: 월(month) 코호트 M3 (일 단위로는 60일 상한이라 불가)
-export const RETENTION = {
-  id: "retention",
-  name: "리텐션 (재방문)",
-  returning: "app_open",
-  milestones: [1, 7, 30, 90],
-  // 세그먼트별 born 이벤트 / 필터(born_where)
-  segments: [
-    { group: "전체", name: "전체 유저", born: "onboarding_completed" },
-    {
-      group: "국가별",
-      name: "🇰🇷 한국",
-      born: "onboarding_completed",
-      bornWhere: 'properties["mp_country_code"]=="South Korea"',
-    },
-    {
-      group: "국가별",
-      name: "🇺🇸 미국",
-      born: "onboarding_completed",
-      bornWhere: 'properties["mp_country_code"]=="United States"',
-    },
-    {
-      group: "결제 여부",
-      name: "💳 결제 유저",
-      born: "subscription_purchase_completed",
-      small: true,
-    },
-  ],
+// ── 리텐션 정의 ───────────────────────────────────────────────
+// 신규가입자 리텐션: 가입(온보딩 완료) → 앱오픈 재방문, 일 코호트(on-day) D1~D30.
+// 가입일 since(from_date)를 설정해 "특정 날짜 이후 가입자"만 볼 수 있다.
+export const RETENTION_BORN = "onboarding_completed"; // 코호트 진입(가입)
+export const RETENTION_RETURN = "app_open"; // 재방문 판정
+export const RETENTION_MAX_DAY = 30;
+export const RETENTION_NOTE =
+  "가입(온보딩 완료) → 앱오픈 재방문 · 일 코호트(on-day) · D1~D30";
+
+// Mixpanel where 표현식 규칙:
+//  - 이벤트 속성: properties["..."]   (예: mp_country_code)
+//  - 유저 속성:   user["..."]         (예: gender, age, is_subscribed)
+export const RETENTION_DIMENSIONS = {
+  overall: {
+    label: "전체",
+    series: [{ name: "전체 유저" }],
+  },
+  activity: {
+    label: "활성화 (3일 1회+)",
+    // "3일에 1회 이상 방문"은 Mixpanel 행동 코호트로만 정확히 표현된다.
+    // 코호트를 만들어 ID를 MIXPANEL_ACTIVE_COHORT_ID 에 넣으면 활성 라인이 채워진다.
+    series: [
+      { name: "전체" },
+      { name: "활성 유저", cohortIdEnv: "MIXPANEL_ACTIVE_COHORT_ID" },
+    ],
+  },
+  country: {
+    label: "국가별",
+    series: [
+      { name: "전체" },
+      { name: "🇰🇷 한국", where: 'properties["mp_country_code"]=="South Korea"' },
+      { name: "🇺🇸 미국", where: 'properties["mp_country_code"]=="United States"' },
+    ],
+  },
+  gender: {
+    label: "성별",
+    series: [
+      { name: "남성", where: 'user["gender"]=="male"' },
+      { name: "여성", where: 'user["gender"]=="female"' },
+      { name: "기타", where: 'user["gender"]=="other"' },
+    ],
+  },
+  age: {
+    label: "나이대",
+    series: [
+      { name: "~19세", where: 'user["age"]<20' },
+      { name: "20대", where: 'user["age"]>=20 and user["age"]<30' },
+      { name: "30대", where: 'user["age"]>=30 and user["age"]<40' },
+      { name: "40대+", where: 'user["age"]>=40' },
+    ],
+  },
+  payment: {
+    label: "결제 여부",
+    series: [
+      { name: "💳 결제", where: 'user["is_subscribed"]==true', small: true },
+      { name: "비결제", where: 'user["is_subscribed"]==false' },
+    ],
+  },
 };
 
-// 국가 코드 속성은 풀네임으로 저장됨 (예: "South Korea", "United States")
-export const COUNTRY_PROPERTY = "mp_country_code";
+// UI 드롭다운 순서/라벨
+export const RETENTION_DIMENSION_LIST = [
+  { key: "overall", label: "전체" },
+  { key: "activity", label: "활성화 (3일 1회+)" },
+  { key: "country", label: "국가별" },
+  { key: "gender", label: "성별" },
+  { key: "age", label: "나이대" },
+  { key: "payment", label: "결제 여부" },
+];
 
+export const COUNTRY_PROPERTY = "mp_country_code";
 export const PROJECT_ID = process.env.MIXPANEL_PROJECT_ID || "3848333";
