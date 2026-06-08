@@ -31,13 +31,15 @@ export const FUNNELS = {
 };
 
 // ── 리텐션 정의 ───────────────────────────────────────────────
-// 리텐션: 앱오픈(app_open) → 홈 체류(home_dwell) 재방문, 일 코호트(on-day) D1~D30.
+// 신규유저 리텐션: 코호트 = first_open_date가 최근 N일인 유저(신규),
+// app_open → home_dwell 재방문, 일 코호트(on-day) D1~D30.
 // (Mixpanel "User Retention" 리포트와 동일 정의)
-export const RETENTION_BORN = "$ae_first_open"; // 첫 앱 실행(첫 가입일)
-export const RETENTION_RETURN = "app_open"; // 재방문 판정
+export const RETENTION_BORN = "app_open"; // 코호트 진입(신규유저 필터와 함께)
+export const RETENTION_RETURN = "home_dwell"; // 재방문 판정
+export const RETENTION_FIRST_OPEN_PROP = "first_open_date"; // 신규유저 판별 속성
 export const RETENTION_MAX_DAY = 30;
 export const RETENTION_NOTE =
-  "첫 앱 실행($ae_first_open) → 앱오픈 재방문 · 일 코호트(on-day) · 최근 30일";
+  "신규유저(first_open_date 최근 30일) · app_open → home_dwell · 일 코호트(on-day)";
 
 // Mixpanel where 표현식 규칙:
 //  - 이벤트 속성: properties["..."]   (예: mp_country_code)

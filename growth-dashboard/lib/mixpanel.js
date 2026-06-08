@@ -144,22 +144,21 @@ async function fetchSeriesCurve(seg, fromDate) {
     interval_count: RETENTION_MAX_DAY,
     retention_type: "birth",
   };
-  if (seg.where) params.born_where = seg.where;
-  if (seg.cohortIdEnv && process.env[seg.cohortIdEnv]) {
-    params.filter_by_cohort = JSON.stringify({ id: Number(process.env[seg.cohortIdEnv]) });
-  }
+  // 신규유저 필터: first_open_date 가 기간 시작일 이후 + 세그먼트 where 결합
+  const newUserWhere = `(user["first_open_date"] > "${fromDate}")`;
+  params.selector = seg.where ? `${newUserWhere} and (${seg.where})` : newUserWhere;
   const json = await query("/api/2.0/retention", params);
   const { cohortSize, rates } = averageCurve(json);
   return { name: seg.name, cohortSize, rates, small: Boolean(seg.small) };
 }
 
 /**
- * 한 차원(전체/국가/성별/나이/결제/활성화)의 D1~D30 리텐션 곡선들을 반환.
+ * 한 차원의 D1~D30 리텐션 곡선들을 반환.
  * @param {string} dimKey
- * @param {string} [since] 가입일 시작(YYYY-MM-DD). 없으면 최근 90일.
+ * @param {number} [days] 신규유저 기간(first_open_date 최근 N일). 기본 30.
  */
-export async function getRetentionDimension(dimKey, since) {
-  const fromDate = since || daysAgo(30);
+export async function getRetentionDimension(dimKey, days = 30) {
+  const fromDate = daysAgo(days);
 
   if (!isLiveConfigured()) {
     const snap =
@@ -169,8 +168,13 @@ export async function getRetentionDimension(dimKey, since) {
       dimension: dimKey,
       label: snap.label,
       maxDay: RETENTION_MAX_DAY,
-      since: fromDate,
+      days,
       note: snapshot.retention.note,
+      // 스냅샷은 최근 30일 기준만 보유 → 다른 기간 선택 시 안내
+      rangeNote:
+        days !== (snapshot.dateRangeDays || 30)
+          ? `※ 내장 실데이터는 최근 30일 기준입니다. ${days}일 기준은 라이브(플랜) 연동 시 제공됩니다.`
+          : "",
       liveOnly: Boolean(snap.liveOnly),
       series: snap.series,
     };
@@ -203,7 +207,7 @@ export async function getRetentionDimension(dimKey, since) {
     dimension: dimKey,
     label: dim.label,
     maxDay: RETENTION_MAX_DAY,
-    since: fromDate,
+    days,
     note: RETENTION_NOTE,
     series,
   };
