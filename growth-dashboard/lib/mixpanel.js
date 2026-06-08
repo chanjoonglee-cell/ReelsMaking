@@ -21,7 +21,13 @@ import {
   RETENTION_DIMENSIONS,
 } from "@/lib/queries";
 
-const API_HOST = process.env.MIXPANEL_API_HOST || "https://mixpanel.com";
+// 데이터 레지던시: MIXPANEL_API_HOST 가 있으면 그것만, 없으면 US→EU→인도 순으로 시도.
+// (EU/인도 프로젝트를 US 주소로 호출하면 403 이 나기 때문에 자동 폴백)
+const HOSTS = process.env.MIXPANEL_API_HOST
+  ? [process.env.MIXPANEL_API_HOST]
+  : ["https://mixpanel.com", "https://eu.mixpanel.com", "https://in.mixpanel.com"];
+let workingHost = null; // 한 번 성공하면 그 리전을 캐시
+
 const ONBOARDING_FUNNEL_ID = process.env.MIXPANEL_ONBOARDING_FUNNEL_ID || "87198134";
 const PAYWALL_FUNNEL_ID = process.env.MIXPANEL_PAYWALL_FUNNEL_ID || "";
 
@@ -46,21 +52,42 @@ function daysAgo(days) {
   return d.toISOString().slice(0, 10);
 }
 
-async function query(path, params) {
-  const url = new URL(`${API_HOST}${path}`);
+function buildUrl(host, path, params) {
+  const url = new URL(`${host}${path}`);
   url.searchParams.set("project_id", String(PROJECT_ID));
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
   }
-  const res = await fetch(url, {
-    headers: { Authorization: authHeader(), Accept: "application/json" },
-    next: { revalidate: 3600 },
-  });
-  if (!res.ok) {
+  return url;
+}
+
+async function query(path, params) {
+  const hosts = workingHost ? [workingHost] : HOSTS;
+  let authError = null;
+
+  for (const host of hosts) {
+    const res = await fetch(buildUrl(host, path, params), {
+      headers: { Authorization: authHeader(), Accept: "application/json" },
+      next: { revalidate: 3600 },
+    });
+    if (res.ok) {
+      workingHost = host; // 성공 리전 기억
+      return res.json();
+    }
     const body = await res.text();
+    // 401/403 은 "이 리전 아님 / 권한 문제" → 다음 리전 시도
+    if (res.status === 401 || res.status === 403) {
+      authError = `Mixpanel ${path} → ${res.status} (${host}): ${body.slice(0, 160)}`;
+      continue;
+    }
+    // 그 외 에러(400 등)는 바로 던짐
     throw new Error(`Mixpanel ${path} → ${res.status}: ${body.slice(0, 200)}`);
   }
-  return res.json();
+
+  // 모든 리전이 401/403 → 레지던시가 아니라 Service Account 권한 문제일 가능성
+  throw new Error(
+    `${authError} · 모든 리전 거부 → Service Account가 이 프로젝트(${PROJECT_ID}) 접근 권한이 있는지(Analyst+), 키가 정확한지 확인 필요`
+  );
 }
 
 // ── 퍼널 ──────────────────────────────────────────────────────
@@ -228,4 +255,4 @@ export async function getDashboardData() {
   return result;
 }
 
-export { API_HOST };
+export { HOSTS };
