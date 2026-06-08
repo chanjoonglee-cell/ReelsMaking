@@ -210,53 +210,21 @@ export async function getRetentionDimension(dimKey, since) {
 }
 
 /**
- * 퍼널 + 상태배지용 데이터. 리텐션은 getRetentionDimension 에서 별도 처리.
+ * 상태배지용 메타데이터 (source/생성일).
  */
-export async function getDashboardData() {
-  if (!isLiveConfigured()) {
-    return { source: "snapshot", ...snapshot };
-  }
-
-  const days = snapshot.dateRangeDays || 30;
-  const result = {
-    source: "live",
-    generatedAt: today(),
-    dateRangeDays: days,
-    funnels: structuredClone(snapshot.funnels),
-    partial: false,
+export async function getMeta() {
+  return {
+    source: isLiveConfigured() ? "live" : "snapshot",
+    generatedAt: snapshot.generatedAt,
   };
+}
 
-  try {
-    const counts = await fetchFunnelCounts(ONBOARDING_FUNNEL_ID, days);
-    if (counts.length) {
-      result.funnels.onboarding.steps = result.funnels.onboarding.steps.map((s, i) => ({
-        ...s,
-        count: counts[i] ?? s.count,
-      }));
-    }
-  } catch (e) {
-    console.warn("[mixpanel] 온보딩 퍼널 라이브 실패 → 스냅샷:", e.message);
-    result.partial = true;
-  }
-
-  if (PAYWALL_FUNNEL_ID) {
-    try {
-      const counts = await fetchFunnelCounts(PAYWALL_FUNNEL_ID, days);
-      if (counts.length) {
-        result.funnels.paywall.overall = result.funnels.paywall.overall.map((s, i) => ({
-          ...s,
-          count: counts[i] ?? s.count,
-        }));
-      }
-    } catch (e) {
-      console.warn("[mixpanel] 페이월 퍼널 라이브 실패 → 스냅샷:", e.message);
-      result.partial = true;
-    }
-  } else {
-    result.partial = true;
-  }
-
-  return result;
+/**
+ * 하단 인사이트(국가별 리텐션 × 결제율) 데이터.
+ * 현재는 내장 실데이터(MCP 추출) 사용.
+ */
+export async function getInsight() {
+  return snapshot.insight;
 }
 
 export { HOSTS };

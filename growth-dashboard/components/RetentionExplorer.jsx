@@ -8,7 +8,7 @@ const DIMS = [
   { key: "completion", label: "학습 완주여부" },
   { key: "country", label: "국가별" },
   { key: "gender", label: "성별" },
-  { key: "age", label: "나이대" },
+  { key: "age", label: "나이대 (6세 단위)" },
   { key: "payment", label: "결제 여부" },
 ];
 

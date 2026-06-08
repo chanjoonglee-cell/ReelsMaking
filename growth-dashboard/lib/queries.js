@@ -33,11 +33,11 @@ export const FUNNELS = {
 // ── 리텐션 정의 ───────────────────────────────────────────────
 // 리텐션: 앱오픈(app_open) → 홈 체류(home_dwell) 재방문, 일 코호트(on-day) D1~D30.
 // (Mixpanel "User Retention" 리포트와 동일 정의)
-export const RETENTION_BORN = "app_open"; // 코호트 진입
-export const RETENTION_RETURN = "home_dwell"; // 재방문 판정
+export const RETENTION_BORN = "$ae_first_open"; // 첫 앱 실행(첫 가입일)
+export const RETENTION_RETURN = "app_open"; // 재방문 판정
 export const RETENTION_MAX_DAY = 30;
 export const RETENTION_NOTE =
-  "앱오픈 → 홈 체류(home_dwell) · 일 코호트(on-day) · 최근 30일";
+  "첫 앱 실행($ae_first_open) → 앱오픈 재방문 · 일 코호트(on-day) · 최근 30일";
 
 // Mixpanel where 표현식 규칙:
 //  - 이벤트 속성: properties["..."]   (예: mp_country_code)
@@ -72,12 +72,17 @@ export const RETENTION_DIMENSIONS = {
     ],
   },
   age: {
-    label: "나이대",
+    label: "나이대 (6세 단위)",
     series: [
-      { name: "~19세", where: 'user["age"]<20', small: true },
-      { name: "20대", where: 'user["age"]>=20 and user["age"]<30' },
-      { name: "30대", where: 'user["age"]>=30 and user["age"]<40' },
-      { name: "40대+", where: 'user["age"]>=40' },
+      { name: "6–12세", where: 'user["age"]>=6 and user["age"]<12', small: true },
+      { name: "12–18세", where: 'user["age"]>=12 and user["age"]<18', small: true },
+      { name: "18–24세", where: 'user["age"]>=18 and user["age"]<24' },
+      { name: "24–30세", where: 'user["age"]>=24 and user["age"]<30' },
+      { name: "30–36세", where: 'user["age"]>=30 and user["age"]<36' },
+      { name: "36–42세", where: 'user["age"]>=36 and user["age"]<42' },
+      { name: "42–48세", where: 'user["age"]>=42 and user["age"]<48' },
+      { name: "48–54세", where: 'user["age"]>=48 and user["age"]<54', small: true },
+      { name: "54세+", where: 'user["age"]>=54', small: true },
     ],
   },
   payment: {
@@ -95,7 +100,7 @@ export const RETENTION_DIMENSION_LIST = [
   { key: "completion", label: "학습 완주여부" },
   { key: "country", label: "국가별" },
   { key: "gender", label: "성별" },
-  { key: "age", label: "나이대" },
+  { key: "age", label: "나이대 (6세 단위)" },
   { key: "payment", label: "결제 여부" },
 ];
 
