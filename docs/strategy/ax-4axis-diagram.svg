@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="1500" height="1120" viewBox="0 0 1500 1120" xmlns="http://www.w3.org/2000/svg" font-family="Noto Sans CJK KR, sans-serif">
+<svg width="1500" height="1070" viewBox="0 0 1500 1070" xmlns="http://www.w3.org/2000/svg" font-family="Noto Sans CJK KR, sans-serif">
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/>
@@ -9,7 +9,7 @@
     </marker>
   </defs>
 
-  <rect width="1500" height="1120" fill="#f8fafc"/>
+  <rect width="1500" height="1070" fill="#f8fafc"/>
 
   <!-- Title -->
   <text x="750" y="52" text-anchor="middle" font-size="30" font-weight="700" fill="#0f172a">AX — 하반기 2개월, 4축 구조</text>
@@ -20,67 +20,67 @@
   <text x="450" y="117" font-size="20" fill="#e2e8f0">데이터 수집  →  측정 · 피드백  →  자동 개선</text>
   <text x="1010" y="117" font-size="16" fill="#94a3b8">(같은 패턴을 네 축에 복붙)</text>
 
-  <!-- ===================== [2] 제품 ===================== -->
-  <rect x="60" y="190" width="450" height="290" rx="14" fill="#ffffff" stroke="#2563eb" stroke-width="2.5"/>
-  <rect x="60" y="190" width="450" height="46" rx="14" fill="#2563eb"/>
-  <rect x="60" y="222" width="450" height="14" fill="#2563eb"/>
-  <text x="80" y="221" font-size="20" font-weight="700" fill="#ffffff">[2] 제품 — LLMOps → AI Agent</text>
-  <text x="80" y="268" font-size="16" fill="#334155">· Prompt Ops 교훈: 감 → 시스템 (되묻기 버그)</text>
-  <text x="80" y="296" font-size="16" fill="#334155">· Eval(할루시네이션) · Latency · 모델/비용</text>
-  <text x="80" y="324" font-size="16" fill="#334155">· Agent = 기억 · 먼저 말 걸기 · 실시간 조정</text>
-  <text x="80" y="352" font-size="16" fill="#334155">· 후보: RAG기억 / 자동복습 / 선제안 / 난이도</text>
-  <text x="80" y="384" font-size="16" font-weight="700" fill="#1d4ed8">★ 딥테크 주장 지점 (투자사 의문 + POC)</text>
-  <rect x="76" y="404" width="418" height="52" rx="8" fill="#eff6ff"/>
-  <text x="92" y="437" font-size="16" font-weight="700" fill="#b91c1c">? 2개월 안의 "첫 한 칸"은 무엇인가</text>
-
-  <!-- ===================== [3] 마케팅 ===================== -->
-  <rect x="550" y="190" width="450" height="290" rx="14" fill="#ffffff" stroke="#d97706" stroke-width="2.5"/>
-  <rect x="550" y="190" width="450" height="46" rx="14" fill="#d97706"/>
-  <rect x="550" y="222" width="450" height="14" fill="#d97706"/>
-  <text x="570" y="221" font-size="20" font-weight="700" fill="#ffffff">[3] 마케팅/결제 — 소구점 · 소재 자동생성</text>
-  <text x="570" y="268" font-size="16" fill="#334155">· 검증: 해외 ROAS 350~400% (북미 한인 교민)</text>
-  <text x="570" y="296" font-size="16" fill="#334155">· 포지션: 보조교재, 한 문장씩 제대로</text>
-  <text x="570" y="324" font-size="16" fill="#334155">· 목표: 추적 → 소재 자동 생성까지</text>
-  <text x="570" y="352" font-size="16" fill="#334155">· 단, [1] 유저 데이터 선행 필수 → 이번 분기 보류</text>
-  <text x="570" y="384" font-size="16" font-weight="700" fill="#b45309">★ 미궁: 유입은 알지만, 왜 결제하는가?</text>
-  <rect x="566" y="404" width="418" height="52" rx="8" fill="#fffbeb"/>
-  <text x="582" y="437" font-size="16" font-weight="700" fill="#b91c1c">? 감정 자극 vs 효과 체감 — 무엇이 결제를 만드나</text>
-
-  <!-- arrows from [1] to [2],[3] -->
-  <line x1="285" y1="585" x2="285" y2="492" stroke="#475569" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="775" y1="585" x2="775" y2="492" stroke="#475569" stroke-width="3" marker-end="url(#arrow)"/>
-  <text x="305" y="545" font-size="15" fill="#475569">기능 우선순위</text>
-  <text x="795" y="545" font-size="15" fill="#475569">소구 포인트</text>
-
-  <!-- ===================== [1] 유저/시장 (토대) ===================== -->
-  <rect x="60" y="590" width="940" height="330" rx="14" fill="#ffffff" stroke="#059669" stroke-width="2.5"/>
-  <rect x="60" y="590" width="940" height="46" rx="14" fill="#059669"/>
-  <rect x="60" y="622" width="940" height="14" fill="#059669"/>
-  <text x="80" y="621" font-size="20" font-weight="700" fill="#ffffff">[1] 유저/시장 데이터 — 토대 (현재 가장 약한 축: 행동 데이터만 = 반쪽)</text>
+  <!-- ===================== [1] 유저/시장 (토대, 맨 위) ===================== -->
+  <rect x="60" y="190" width="940" height="300" rx="14" fill="#ffffff" stroke="#059669" stroke-width="2.5"/>
+  <rect x="60" y="190" width="940" height="46" rx="14" fill="#059669"/>
+  <rect x="60" y="222" width="940" height="14" fill="#059669"/>
+  <text x="80" y="221" font-size="20" font-weight="700" fill="#ffffff">[1] 유저/시장 데이터 — 토대 (현재 가장 약한 축: 행동 데이터만 = 반쪽)</text>
 
   <!-- 3 data sub-boxes -->
-  <rect x="84" y="654" width="280" height="84" rx="10" fill="#ecfdf5" stroke="#34d399"/>
-  <text x="104" y="686" font-size="16" font-weight="700" fill="#065f46">정성 — 유저 인터뷰</text>
-  <text x="104" y="714" font-size="14" fill="#334155">DNA 협업 · 주기화 (현재 노후화)</text>
+  <rect x="84" y="254" width="280" height="84" rx="10" fill="#ecfdf5" stroke="#34d399"/>
+  <text x="104" y="286" font-size="16" font-weight="700" fill="#065f46">정성 — 유저 인터뷰</text>
+  <text x="104" y="314" font-size="14" fill="#334155">DNA 협업 · 주기화 (현재 노후화)</text>
 
-  <rect x="390" y="654" width="280" height="84" rx="10" fill="#ecfdf5" stroke="#34d399"/>
-  <text x="410" y="686" font-size="16" font-weight="700" fill="#065f46">정량 — 인앱 서베이</text>
-  <text x="410" y="714" font-size="14" fill="#334155">주기적 수집 (신규 구축)</text>
+  <rect x="390" y="254" width="280" height="84" rx="10" fill="#ecfdf5" stroke="#34d399"/>
+  <text x="410" y="286" font-size="16" font-weight="700" fill="#065f46">정량 — 인앱 서베이</text>
+  <text x="410" y="314" font-size="14" fill="#334155">주기적 수집 (신규 구축)</text>
 
-  <rect x="696" y="654" width="280" height="84" rx="10" fill="#ecfdf5" stroke="#34d399"/>
-  <text x="716" y="686" font-size="16" font-weight="700" fill="#065f46">행동 — Mixpanel · Firebase</text>
-  <text x="716" y="714" font-size="14" fill="#334155">유일하게 확보 중</text>
+  <rect x="696" y="254" width="280" height="84" rx="10" fill="#ecfdf5" stroke="#34d399"/>
+  <text x="716" y="286" font-size="16" font-weight="700" fill="#065f46">행동 — Mixpanel · Firebase</text>
+  <text x="716" y="314" font-size="14" fill="#334155">유일하게 확보 중</text>
 
   <!-- synthesis -->
-  <line x1="530" y1="738" x2="530" y2="766" stroke="#059669" stroke-width="3" marker-end="url(#arrow)"/>
-  <rect x="200" y="770" width="660" height="56" rx="10" fill="#059669"/>
-  <text x="530" y="806" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">종합 → 의사결정 기준 : 유저 멘탈모델 · JTBD</text>
+  <line x1="530" y1="338" x2="530" y2="364" stroke="#059669" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="200" y="368" width="660" height="56" rx="10" fill="#059669"/>
+  <text x="530" y="404" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">종합 → 의사결정 기준 : 유저 멘탈모델 · JTBD</text>
 
-  <text x="84" y="862" font-size="15" fill="#334155">· 이탈 이론: R = M·A / C (동기×성취/인지부하) → 정체성: 자기참조 인출학습 (하루 5분, D1→D66 습관화)</text>
-  <text x="84" y="892" font-size="15" font-weight="700" fill="#b91c1c">? 정성·정량·행동을 어떻게 "하나로" 종합하나 — 따로 쌓이면 의미 없음</text>
+  <rect x="84" y="436" width="892" height="40" rx="8" fill="#fef2f2"/>
+  <text x="100" y="463" font-size="15" font-weight="700" fill="#b91c1c">? 정성·정량·행동을 어떻게 "하나로" 종합하나 — 따로 쌓이면 의미 없음</text>
+
+  <!-- arrows from [1] down to [2],[3] -->
+  <line x1="285" y1="490" x2="285" y2="560" stroke="#475569" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="775" y1="490" x2="775" y2="560" stroke="#475569" stroke-width="3" marker-end="url(#arrow)"/>
+  <text x="305" y="532" font-size="15" fill="#475569">기능 우선순위</text>
+  <text x="795" y="532" font-size="15" fill="#475569">소구 포인트</text>
+
+  <!-- ===================== [2] 제품 ===================== -->
+  <rect x="60" y="565" width="450" height="300" rx="14" fill="#ffffff" stroke="#2563eb" stroke-width="2.5"/>
+  <rect x="60" y="565" width="450" height="46" rx="14" fill="#2563eb"/>
+  <rect x="60" y="597" width="450" height="14" fill="#2563eb"/>
+  <text x="80" y="596" font-size="20" font-weight="700" fill="#ffffff">[2] 제품 — LLMOps → AI Agent</text>
+  <text x="80" y="643" font-size="16" fill="#334155">· Prompt Ops 교훈: 감 → 시스템 (되묻기 버그)</text>
+  <text x="80" y="671" font-size="16" fill="#334155">· Eval(할루시네이션) · Latency · 모델/비용</text>
+  <text x="80" y="699" font-size="16" fill="#334155">· Agent = 기억 · 먼저 말 걸기 · 실시간 조정</text>
+  <text x="80" y="727" font-size="16" fill="#334155">· 후보: RAG기억 / 자동복습 / 선제안 / 난이도</text>
+  <text x="80" y="759" font-size="16" font-weight="700" fill="#1d4ed8">★ 딥테크 주장 지점 (투자사 의문 + POC)</text>
+  <rect x="76" y="781" width="418" height="52" rx="8" fill="#eff6ff"/>
+  <text x="92" y="814" font-size="16" font-weight="700" fill="#b91c1c">? 2개월 안의 "첫 한 칸"은 무엇인가</text>
+
+  <!-- ===================== [3] 마케팅 ===================== -->
+  <rect x="550" y="565" width="450" height="300" rx="14" fill="#ffffff" stroke="#d97706" stroke-width="2.5"/>
+  <rect x="550" y="565" width="450" height="46" rx="14" fill="#d97706"/>
+  <rect x="550" y="597" width="450" height="14" fill="#d97706"/>
+  <text x="570" y="596" font-size="20" font-weight="700" fill="#ffffff">[3] 마케팅/결제 — 소구점 · 소재 자동생성</text>
+  <text x="570" y="643" font-size="16" fill="#334155">· 검증: 해외 ROAS 350~400% (북미 한인 교민)</text>
+  <text x="570" y="671" font-size="16" fill="#334155">· 포지션: 보조교재, 한 문장씩 제대로</text>
+  <text x="570" y="699" font-size="16" fill="#334155">· 목표: 추적 → 소재 자동 생성까지</text>
+  <text x="570" y="727" font-size="16" fill="#334155">· 단, [1] 유저 데이터 선행 필수 → 이번 분기 보류</text>
+  <text x="570" y="759" font-size="16" font-weight="700" fill="#b45309">★ 미궁: 유입은 알지만, 왜 결제하는가?</text>
+  <rect x="566" y="781" width="418" height="52" rx="8" fill="#fffbeb"/>
+  <text x="582" y="814" font-size="16" font-weight="700" fill="#b91c1c">? 감정 자극 vs 효과 체감 — 무엇이 결제를 만드나</text>
 
   <!-- ===================== [4] 팀/회사 OS ===================== -->
-  <rect x="1050" y="190" width="390" height="730" rx="14" fill="#ffffff" stroke="#7c3aed" stroke-width="2.5"/>
+  <rect x="1050" y="190" width="390" height="675" rx="14" fill="#ffffff" stroke="#7c3aed" stroke-width="2.5"/>
   <rect x="1050" y="190" width="390" height="46" rx="14" fill="#7c3aed"/>
   <rect x="1050" y="222" width="390" height="14" fill="#7c3aed"/>
   <text x="1070" y="221" font-size="20" font-weight="700" fill="#ffffff">[4] 팀 / 회사 OS — 메타 레이어</text>
@@ -95,38 +95,36 @@
   <text x="1070" y="414" font-size="15" fill="#334155">· 모든 기록 → 슬랙·노션·Claude (public)</text>
   <text x="1070" y="442" font-size="15" fill="#334155">· 스프린트 종료 시 한 곳에 모임:</text>
   <text x="1086" y="470" font-size="15" fill="#64748b">유저 반응 · 결제 · 리텐션 · 회고</text>
-  <text x="1070" y="502" font-size="15" fill="#334155">· AI가 맥락 읽고 병목 짚어줌</text>
-  <text x="1086" y="530" font-size="15" fill="#64748b">"이번 병목은 여기, 다음은 여기"</text>
+  <text x="1070" y="498" font-size="15" fill="#334155">· AI가 맥락 읽고 병목 짚어줌</text>
+  <text x="1086" y="526" font-size="15" fill="#64748b">"이번 병목은 여기, 다음은 여기"</text>
 
-  <rect x="1066" y="556" width="358" height="64" rx="10" fill="#f5f3ff"/>
-  <text x="1245" y="582" text-anchor="middle" font-size="16" font-weight="700" fill="#6d28d9">팀 자체 = 하나의 학습 에이전트</text>
-  <text x="1245" y="606" text-anchor="middle" font-size="14" fill="#64748b">유저용 인출학습 루프를 조직에 복붙</text>
+  <rect x="1066" y="548" width="358" height="64" rx="10" fill="#f5f3ff"/>
+  <text x="1245" y="574" text-anchor="middle" font-size="16" font-weight="700" fill="#6d28d9">팀 자체 = 하나의 학습 에이전트</text>
+  <text x="1245" y="598" text-anchor="middle" font-size="14" fill="#64748b">유저용 학습 루프를 조직에 복붙</text>
 
-  <rect x="1066" y="640" width="358" height="80" rx="8" fill="#fef2f2"/>
-  <text x="1082" y="670" font-size="15" font-weight="700" fill="#b91c1c">? 인프라부터 깔까,</text>
-  <text x="1082" y="696" font-size="15" font-weight="700" fill="#b91c1c">   "public 기록 원칙"만 먼저 깔까</text>
+  <rect x="1066" y="628" width="358" height="80" rx="8" fill="#fef2f2"/>
+  <text x="1082" y="658" font-size="15" font-weight="700" fill="#b91c1c">? 인프라부터 깔까,</text>
+  <text x="1082" y="684" font-size="15" font-weight="700" fill="#b91c1c">   "public 기록 원칙"만 먼저 깔까</text>
 
-  <!-- sprint output -->
-  <rect x="1066" y="744" width="358" height="86" rx="10" fill="#7c3aed"/>
-  <text x="1245" y="780" text-anchor="middle" font-size="16" font-weight="700" fill="#ffffff">스프린트 종료 시</text>
-  <text x="1245" y="808" text-anchor="middle" font-size="16" fill="#ede9fe">AI가 데이터 기반 의사결정 보조</text>
+  <rect x="1066" y="724" width="358" height="86" rx="10" fill="#7c3aed"/>
+  <text x="1245" y="760" text-anchor="middle" font-size="16" font-weight="700" fill="#ffffff">스프린트 종료 시</text>
+  <text x="1245" y="788" text-anchor="middle" font-size="16" fill="#ede9fe">AI가 데이터 기반 의사결정 보조</text>
 
-  <text x="1070" y="876" font-size="14" fill="#64748b">팀원 개개인 = raw data를 쌓는 사람</text>
-  <text x="1070" y="900" font-size="14" fill="#64748b">판단 재료 = 축적된 데이터 + AI</text>
+  <text x="1070" y="844" font-size="14" fill="#64748b">팀원 = raw data를 쌓는 사람 / 판단 = 데이터 + AI</text>
 
   <!-- arrows into [4] -->
-  <line x1="510" y1="300" x2="1050" y2="300" stroke="#475569" stroke-width="2.5" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
-  <line x1="1000" y1="320" x2="1050" y2="320" stroke="#475569" stroke-width="2.5" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+  <line x1="1000" y1="300" x2="1050" y2="300" stroke="#475569" stroke-width="2.5" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
   <line x1="1000" y1="700" x2="1050" y2="700" stroke="#475569" stroke-width="2.5" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
-  <text x="1012" y="288" font-size="13" fill="#64748b">데이터</text>
+  <text x="1006" y="288" font-size="13" fill="#64748b">데이터</text>
+  <text x="1006" y="688" font-size="13" fill="#64748b">데이터</text>
 
-  <!-- feedback loop from [4] back to [1] -->
-  <path d="M 1245 920 L 1245 980 L 530 980 L 530 924" fill="none" stroke="#2563eb" stroke-width="3" marker-end="url(#arrowBlue)"/>
-  <text x="887" y="1004" text-anchor="middle" font-size="16" font-weight="700" fill="#2563eb">피드백 루프 — 다음 스프린트의 우선순위 · 가설로 환류</text>
+  <!-- feedback loop from [4] back up to [1] -->
+  <path d="M 1245 865 L 1245 915 L 32 915 L 32 340 L 56 340" fill="none" stroke="#2563eb" stroke-width="3" marker-end="url(#arrowBlue)"/>
+  <text x="640" y="940" text-anchor="middle" font-size="16" font-weight="700" fill="#2563eb">피드백 루프 — 다음 스프린트의 우선순위 · 가설로 환류</text>
 
   <!-- bottom priority strip -->
-  <rect x="60" y="1030" width="1380" height="58" rx="12" fill="#0f172a"/>
-  <text x="86" y="1066" font-size="17" font-weight="700" fill="#ffffff">우선순위</text>
-  <text x="190" y="1066" font-size="17" fill="#e2e8f0">[1] 유저/시장 (토대)  →  [2] 제품 (딥테크 핵심)  →  [4] 팀 OS (메타)   |   [3] 마케팅 자동생성 = 보류</text>
-  <text x="1130" y="1066" font-size="17" font-weight="700" fill="#fbbf24">핵심 질문: 무엇을 버릴 것인가?</text>
+  <rect x="60" y="965" width="1380" height="58" rx="12" fill="#0f172a"/>
+  <text x="86" y="1001" font-size="17" font-weight="700" fill="#ffffff">우선순위</text>
+  <text x="190" y="1001" font-size="17" fill="#e2e8f0">[1] 유저/시장 (토대)  →  [2] 제품 (딥테크 핵심)  →  [4] 팀 OS (메타)   |   [3] 마케팅 자동생성 = 보류</text>
+  <text x="1130" y="1001" font-size="17" font-weight="700" fill="#fbbf24">핵심 질문: 무엇을 버릴 것인가?</text>
 </svg>
