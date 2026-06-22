@@ -1,8 +1,8 @@
 # 언어학습 AI Agent — 전략 & 아키텍처 문서 (근거 버전)
 
 > 이 문서는 **기존 버전**(`language-learning-agent-strategy.md`, HOW 중심)에
-> **설계의 이유·근거(자기참조·인출)** 를 평이하게 덧댄 버전이다. 논문 인용은 생략하고 직관적 근거만 둔다.
-> 이론 상세는 컨셉노트 "자기참조형 인출 기반 모바일 언어 학습 경험 설계" 참조.
+> **설계의 이유·근거(자기참조·인출)** 를 덧대고 **논문 인용**을 단 버전이다. 이론 상세는 컨셉노트
+> "자기참조형 인출 기반 모바일 언어 학습 경험 설계" 참조. 인용 목록은 §10.
 > 근거는 코드(`OpenAIService`) · Slack `#ax_prompt-ops` · Notion 1차 리포트(실측) 기반.
 
 ## 목차
@@ -11,13 +11,13 @@
 2. 전사 맥락에서의 위치
 3. 현황 아키텍처 (As-is)
 4. 설계 원칙
-5. 목표 아키텍처 (To-be) — 마일스톤
-   - 5.1 M1. LLM 레이어 · 5.2 M2. LLMOps · 5.3 M3. 에이전트
-6. 공통 설계 (횡단)
-   - 6.1 모델 라우팅 · 6.2 도구 카탈로그 · 6.3 동기 설계(3경로)
+5. 목표 아키텍처 (To-be) — 4개월 마일스톤
+   - 5.0 4개월 로드맵 · 5.1 M1 · 5.2 M2 · 5.3 M3 · 5.4 M4
+6. 공통 설계 (모델 라우팅 · 도구 · 동기 3경로)
 7. 검증 (시스템 + 학습 성과·지속)
 8. 리스크 & 열린 결정
 9. 부록 — 소스
+10. 참고문헌
 
 ---
 
@@ -27,25 +27,28 @@
 차이는 **소재가 '나'에게서 나오는가**에 있다. 그래서 두 축으로 설계한다.
 
 - **자기참조(소재가 나에게서):** 내 일기·사진·생각이 학습 소재가 되면 '연습'과 '진짜 하고 싶은 표현'의
-  간격이 사라진다 → 동기가 생긴다.
-- **인출(백지에서 떠올리기):** 보고 따라하는 게 아니라 스스로 산출해야 진짜로 는다. 어렵지만
-  **그 어려움이 학습의 핵심이라 일부러 낮추지 않는다.**
+  간격이 사라진다 → 동기가 생긴다(자기참조 효과; Rogers et al., 1977).
+- **인출(백지에서 떠올리기):** 보고 따라하는 게 아니라 스스로 산출해야 진짜로 는다(인출 연습이
+  단순 반복·모방보다 우월; Karpicke & Blunt, 2011; Kang et al., 2013). 어렵지만 **그 어려움이 학습의
+  핵심이라 일부러 낮추지 않는다**(바람직한 어려움; Bjork, 1994).
 
 둘을 합치면: **난이도를 낮추지 않고도(인출 유지) 동기를 공급(자기참조)** 해 "작심 3일"을 넘긴다.
-단, '지속'을 스트릭·푸시로 부풀려진 단순 재방문이 아니라 **"학습이 같이 일어난 지속"** 으로 본다(§7).
+기존 게임화·스트릭은 재방문은 올리되 학습과 분리된 '가짜 재방문'에 머물렀고(Eyal, 2014; Shortt et al.,
+2023), 학습과학은 인지부하로 이탈을 키웠다 — 자기참조성은 그 둘을 잇는 빈칸이다. 그래서 '지속'을
+스트릭으로 부풀려진 단순 재방문이 아니라 **"학습이 같이 일어난 지속"** 으로 본다(§7).
 
 그리고 이 방식은 **유저의 자유로운 표현을 실시간으로 교정**해줄 수 있어야 가능한데, 그게 LLM으로
-비로소 됐다. **이 문서(에이전트)가 바로 그 실현체다.**
+비로소 됐다(Kittredge et al., 2025). **이 문서(에이전트)가 바로 그 실현체다.**
 
 ---
 
 ## 1. 목적 & 비전
 
 기존 **모바일 영어일기 앱**(언어의숲)에 AI Agent를 도입한다. 유저의 **일기(텍스트)+사진**이
-독점 데이터(moat)다. — 단순히 데이터를 많이 가져서가 아니라, **소재가 유저 자신에게서 나와
-동기·애착의 원천**이 되기 때문이다(§0). Agent의 정체성은 **"유저를 깊이 아는 외국인 친구"** —
-단순 교정기가 아니라 일기·사진으로 **멘탈모델·관심사·성격·맥락**을 이해하고 그 위에서 교정·학습을 돕는다.
-궁극 목표: **"어려움에도 불구하고 계속 학습하게."**
+독점 데이터(moat)다 — 단순히 데이터를 많이 가져서가 아니라, **소재가 유저 자신에게서 나와
+동기(Ryan & Deci, 2000)·애착(확장된 자기; Belk, 1988)의 원천**이 되기 때문이다(§0). Agent의 정체성은
+**"유저를 깊이 아는 외국인 친구"** — 단순 교정기가 아니라 일기·사진으로 **멘탈모델·관심사·성격·맥락**을
+이해하고 그 위에서 교정·학습을 돕는다. 궁극 목표: **"어려움에도 불구하고 계속 학습하게."**
 
 **핵심 기능 4개**(M3에서 서브에이전트화): ⓪페르소나 분석(중심) ①맞춤 문제·문장 ②소크라테스식 채점·피드백
 ③망각곡선 복습.
@@ -62,7 +65,7 @@
 **본 문서 = ②제품 트랙 + 그 LLMOps**다.
 
 - 우선순위: **①·②·④ 연결이 핵심**, **③(마케팅·결제)은 후순위**(가장 약하고 제어 난도 높음)
-- 기능3의 "먼저 말 걸기" 프로액티브 알림은 **로컬 컴퓨트(맥미니)+데이터 연동**에 의존 — M3 비동기 평면
+- 기능3의 "먼저 말 걸기" 프로액티브 알림은 **로컬 컴퓨트(맥미니)+데이터 연동**에 의존 — M3/M4
 - 팀 회복력 원칙: 지식을 **사람 머릿속이 아니라 시스템·문서·계약 테스트**에 둔다(누가 빠져도 대응 가능)
 - **대외(POC/IR) 명분:** "GPT 래핑 아니냐"에 대한 답 — **검증 가능한 설계 원리(§0)를 LLM으로 구현**한 것.
   컨셉노트(이론)와 본 문서(구현)가 [왜 → 어떻게] 한 쌍을 이룬다.
@@ -99,26 +102,52 @@ JSON 정규식 추출 / **사진 입력 주석처리(독점데이터 미활용)*
 - **모델 권고 `gpt-4.1-mini`**(품질 동급·**p95 1.64s→0.85s**·비용↓), gpt-4o-mini 탈락
 - **가장 큰 latency 레버 = 병렬화·스트리밍**(모델 다운사이징보다 큼)
 
-> 진단: "0에서 시작"이 아니다. 공백은 **코드 정합성 → 운영 시스템화 → 에이전트화** 순서의 토대다.
+> 진단: "0에서 시작"이 아니다. 공백은 **코드 정합성 → 운영 시스템화 → 에이전트화 → 측정·자율** 순서의 토대다.
 
 ---
 
 ## 4. 설계 원칙
 1. **페르소나 = 살아있는 구조화 문서(dossier).** 원시 history 대신 압축 dossier를 1차 컨텍스트로.
 2. **위임 우선.** 분석·생성·채점·복습을 서브에이전트로 분리·격리.
-3. **복리 루프.** 일기 누적 → 페르소나 풍부 → 개인화↑ → 참여↑ → 데이터↑. *(= §0 애착 경로의 구현)*
+3. **복리 루프.** 일기 누적 → 페르소나 풍부 → 개인화↑ → 참여↑ → 데이터↑ *(= §0 애착 경로; Belk, 1988)*.
 4. **프로바이더 비종속.** LLM은 라우터 뒤 교체 가능한 부품.
 5. **결정론은 코드로.** SRS·점수·계약검증은 결정론 코드, LLM은 자연어만.
 6. **측정 우선.** 프롬프트·모델 변경은 골든셋·계약 테스트 통과 후 배포. 노이즈는 report-only.
-7. **독점 데이터 활용.** 일기+사진(특히 사진)을 실제 입력에 투입 *(= §0 자기참조의 연료)*.
+7. **독점 데이터 활용.** 일기+사진(특히 사진)을 실제 입력에 투입 *(= §0 자기참조; Rogers et al., 1977)*.
 
 ---
 
-## 5. 목표 아키텍처 (To-be) — 마일스톤
+## 5. 목표 아키텍처 (To-be) — 4개월 마일스톤
 
-`M1 LLM 레이어 → M2 LLMOps → M3 Agent`. 각 단계가 **독립적으로 동작하는 아키텍처 상태**를 만들고
-다음의 토대가 된다. **측정 가능한 토대 위에서만 에이전트를 올린다.** (M1↔M2는 일부 병행 가능 —
-되묻기 핫픽스는 M1 코드 + M2 계약 테스트가 한 PR. 단 M3를 토대 없이 먼저 가지 않는다.)
+`M1 LLM 레이어 → M2 LLMOps → M3 Agent → M4 학습성과·자율`. 각 단계가 **독립적으로 동작하는
+아키텍처 상태**를 만들고 다음의 토대가 된다. **측정 가능한 토대 위에서만 에이전트를 올린다.**
+
+### 5.0 4개월 로드맵
+
+```mermaid
+gantt
+    title 4개월 실행 로드맵 (M1~M4)
+    dateFormat YYYY-MM-DD
+    axisFormat %-m월
+    section M1 LLM 레이어
+    라우터·결정론·비용·사진·프롬프트 외부화 :m1, 2026-07-01, 30d
+    section M2 LLMOps
+    계약 게이트·하네스 repo화·관측(PR#79) :m2, 2026-07-15, 45d
+    section M3 에이전트
+    페르소나 dossier·4서브에이전트 :m3, 2026-08-15, 45d
+    section M4 학습성과·자율
+    학습 KPI·GAN 자율루프·proactive·POC :m4, 2026-09-15, 45d
+```
+
+| 월 | 마일스톤 | 한 줄 | 핵심 산출 |
+|---|---|---|---|
+| **1개월차** | **M1 LLM 레이어** | 라우터로 정합화 | 결정론·재시도·비용·사진·프롬프트 외부화 |
+| **2개월차** | **M2 LLMOps** | 측정 = 배포 관문 | 계약 게이트·하네스 repo화·관측 (**PR #79 머지**) |
+| **3개월차** | **M3 에이전트** | 페르소나 + 4서브 | dossier·socratic·generator·review (**POC 핵심**) |
+| **4개월차** | **M4 학습성과·자율** | 루프를 닫고 입증 | 학습 KPI·GAN 자율루프·proactive 알림·POC/IR 산출 |
+
+> 단계는 일부 겹친다(M1↔M2 병행, M3는 가장 무거워 3~4개월차 걸침, M4 측정은 M3와 함께 시작).
+> 다만 **M3를 M1·M2 토대 없이 먼저 가지 않는다**(측정 불능 리스크).
 
 ### 5.1 M1. LLM 레이어 — 라우터 단일 진입점
 
@@ -235,11 +264,39 @@ flowchart TB
 | **D. review-scheduler** | ① 배치 / ③ | 아이템+quality(0~5) → 다음 복습일·알림. **SRS 간격은 결정론 코드(SM-2/FSRS)** | 신규 (`error_log`→SRS 자동 등록) |
 
 > **설계 근거(§0과 연결):** socratic-tutor가 **정답을 바로 안 주는** 이유 = "보고 따라하기"가 아니라
-> **백지에서 떠올리는 인출**이라야 진짜 학습이기 때문. problem-generator가 **내 일기**를 소재로 쓰는
-> 이유 = 소재가 나에게서 나와야 동기가 생기기 때문(자기참조).
+> **백지에서 떠올리는 인출**이라야 진짜 학습이기 때문(Karpicke & Blunt, 2011; 생성효과 Slamecka & Graf,
+> 1978). problem-generator가 **내 일기**를 소재로 쓰는 이유 = 소재가 나에게서 나와야 동기가 생기기
+> 때문(자기참조; Rogers et al., 1977).
 
 **페르소나 dossier(구조)**: `persona.md`(관심사/성격/관계 + mermaid) · `language_profile.md`(CEFR·오류) ·
 `error_log`(→SRS) · `timeline`. 대화엔 원시 history 대신 **압축 dossier**만 주입.
+
+### 5.4 M4. 학습 성과 · 자율 루프 — "루프를 닫고 대외로 입증"
+
+에이전트가 돌기 시작하면, 이제 **이론(자기참조·인출)이 맞는지 데이터로 확인하고 스스로 개선되게** 만든다.
+
+```mermaid
+flowchart LR
+    USE["에이전트 운영(M3)"] --> KPI[("학습 KPI 측정<br/>상태전이·인출비율·자기참조 ratio")]
+    KPI --> HYP["명제 1~4 추적"]
+    FB["#feedback 보이스"] --> AUTO
+    KPI --> AUTO
+    subgraph AUTO["GAN 자율 루프 (사람은 감독)"]
+        TAG2["태깅"] --> GOLD2["골든셋 확장"] --> IMP["프롬프트·페르소나 개선"]
+    end
+    IMP --> USE
+    KPI --> OUT["POC/IR 산출물<br/>'학습 동반 지속' 입증"]
+    RS2["review-scheduler"] --> PRO["proactive 알림<br/>먼저 말 걸기 · 망각곡선"]
+```
+
+**핵심 설계 결정**
+- **학습 성과 KPI 가동**(§7-B): 상태전이·인출비율·자기참조 ratio를 dossier·대시보드에 적재, 명제1~4 추적
+- **GAN 자율 루프**: #feedback·KPI → 태깅 → 골든셋 확장 → eval → 프롬프트/페르소나 개선까지 자동(사람 감독)
+- **HOTL 전환**: 교정·페르소나 갱신을 자율 실행, 사람은 감독만. 전환 기준 = **학습 KPI·계약 게이트 통과율로 정량화**
+- **proactive 에이전트**: "먼저 말 걸기" + 망각곡선 복습 알림 풀가동(review-scheduler 운영) — 로컬 컴퓨트(맥미니) 의존
+- **대외 산출물**: POC(업스테이지 Socratic) 데모 + IR용 "학습 동반 지속" 입증 패키지
+
+**산출**: 이론→구현→측정 루프 완결 + 24/7 자율 운영 + 대외 입증 패키지.
 
 ---
 
@@ -261,9 +318,12 @@ flowchart TB
 function-calling으로 프로바이더 공통 추상화. 셸/파일 도구 미부여(injection 최소화).
 
 ### 6.3 동기 설계 — "계속하게" 만드는 세 갈래
-1. **재미(바로 작동):** 내 얘기가 소재라 관련 있고 흥미가 생긴다 → 〔problem-generator〕
-2. **자신감(바로 작동):** 떠먹여주지 않고 스스로 떠올려 맞히니 성취감이 쌓인다 → 〔socratic-tutor〕
-3. **애착(쌓일수록):** 내 기록이 누적되면 '나의 일부'처럼 느껴져 떠나기 아쉬워진다 → 〔dossier 누적 = 플라이휠〕
+1. **재미(바로 작동):** 내 얘기가 소재라 관련 있고 흥미가 생긴다 → 자율성·관련성 충족 → 내재적 동기
+   (Ryan & Deci, 2000) 〔problem-generator〕
+2. **자신감(바로 작동):** 떠먹여주지 않고 스스로 떠올려 맞히니(인출; Bjork, 1994) 성취감이 쌓인다 →
+   자기효능감(Bandura, 1977) 〔socratic-tutor〕
+3. **애착(쌓일수록):** 내 기록이 누적되면 '나의 일부'처럼 느껴져 떠나기 아쉬워진다 → 확장된 자기
+   (Belk, 1988) 〔dossier 누적 = 플라이휠〕
 
 앞 둘은 **매 세션 즉각**, 셋째는 **데이터가 쌓여야 작동하는 장기 효과**(장기 리텐션의 핵심).
 여기에 격려 톤·적응형 난이도·즉각 스트리밍(0.5초 체감)이 보조한다.
@@ -276,13 +336,17 @@ function-calling으로 프로바이더 공통 추상화. 셸/파일 도구 미�
 - **M1**: 되묻기 0 회귀 · 비용 로그 노출 · 모델 스왑 1-config · p95 개선
 - **M2**: 프롬프트 변경 PR이 계약 게이트 통과해야 머지 · 6축 report 자동 첨부 · eval 오염 0
 - **M3**: 가상 유저(일기+사진) 분석→생성→소크라테스→복습 e2e · dossier 누적 갱신 · 프로바이더 교체 무영향
+- **M4**: GAN 자율 루프 가동 · HOTL 전환 기준 충족 · proactive 알림 동작 · POC 데모 산출
 
 **(B) 학습 성과·지속 — "진짜 배우면서 남는가"**
 - **지속을 재방문율로 보지 않는다.** 스트릭으로 부풀려진 '가짜 재방문' 대신, 상태(활성/휴면/이탈)의
-  **이동**을 보되 그 이동 조건에 학습을 넣는다 — **인출이 일어난 세션 비율 · 틀린 뒤 다시 돌아온 비율.**
-- **자기참조가 실제 작동하는지:** 자기 문장으로 답한 비율 · 내 일기·사진에서 나온 소재 비율 ·
-  베끼지 않고 백지에서 떠올린 비율. (이 지표들은 dossier에도 적재)
-- **핵심 가설:** 기록이 쌓일수록 30일 뒤에도 남는 비율이 오르는가(애착) · 자기참조가 높을수록 다시 오는가(동기).
+  **이동**을 보되 그 이동 조건에 학습을 넣는다 — **인출이 일어난 세션 비율 · 틀린 뒤 다시 돌아온 비율**
+  (Gustafson, 2023). 행동로그만으론 이탈 원인이 안 보이므로(Singh et al., 2021) 지속의향을 보조 지표로
+  병행하되 의향–행동 간극은 한계로 둔다.
+- **자기참조가 실제 작동하는지**(‘지난주의 나’ 기준; Jonathan et al., 2017): 자기 문장으로 답한 비율 ·
+  내 일기·사진에서 나온 소재 비율 · 베끼지 않고 백지에서 떠올린 비율. (이 지표들은 dossier에도 적재)
+- **핵심 가설(명제):** ①자기참조↑→동기→지속, ②자기참조↑→자기효능감→지속, ③기록 누적↑→애착→**장기 지속
+  (D30+)**, ④경계: 언어·글쓰기(자기표현적)에서 효과가 강하다.
 
 > 이 (B)가 에이전트의 **목표함수**다 — "가짜 재방문 배제, **학습 동반 지속** 극대화".
 
@@ -298,3 +362,31 @@ function-calling으로 프로바이더 공통 추상화. 셸/파일 도구 미�
 컨셉노트 "자기참조형 인출 기반 모바일 언어 학습 경험 설계"(이론) · 코드 `OpenAIService` ·
 Slack `#ax_prompt-ops`(PR #79) · Notion 1차 리포트(`run_eval.py`/`run_latency.py`, v1.2 92.1,
 gpt-4.1-mini 권고) · 진단표(5패턴)·정답셋 20건
+
+## 10. 참고문헌
+- Alamri, H., Lowell, V., Watson, W., & Watson, S. L. (2020). Using personalized learning as an instructional approach to motivate learners in online higher education. *Journal of Research on Technology in Education, 52*(3), 322–352.
+- Bandura, A. (1977). Self-efficacy: Toward a unifying theory of behavioral change. *Psychological Review, 84*(2), 191–215.
+- Belk, R. W. (1988). Possessions and the extended self. *Journal of Consumer Research, 15*(2), 139–168.
+- Bjork, R. A. (1994). Memory and metamemory considerations in the training of human beings. In *Metacognition: Knowing about knowing* (pp. 185–205). MIT Press.
+- Campbell, D. T., & Fiske, D. W. (1959). Convergent and discriminant validation by the multitrait-multimethod matrix. *Psychological Bulletin, 56*(2), 81–105.
+- Chiu, T. K. F. (2022). Applying the self-determination theory (SDT) to explain student engagement in online learning during the COVID-19 pandemic. *Journal of Research on Technology in Education, 54*(S1), S14–S30.
+- Conway, M. A., & Pleydell-Pearce, C. W. (2000). The construction of autobiographical memories in the self-memory system. *Psychological Review, 107*(2), 261–288.
+- Craik, F. I. M., & Lockhart, R. S. (1972). Levels of processing: A framework for memory research. *Journal of Verbal Learning and Verbal Behavior, 11*(6), 671–684.
+- Cronbach, L. J., & Meehl, P. E. (1955). Construct validity in psychological tests. *Psychological Bulletin, 52*(4), 281–302.
+- Eyal, N. (2014). *Hooked: How to build habit-forming products.* Portfolio/Penguin.
+- Fogg, B. J. (2009). A behavior model for persuasive design. In *Proceedings of the 4th International Conference on Persuasive Technology* (Article 40). ACM.
+- Gustafson, E. (2023). Meaningful metrics: How data sharpened the focus of product teams. *Duolingo Blog.*
+- Jonathan, C., Tan, J. P.-L., Koh, E., Caleon, I., & Tay, S. H. (2017). Enhancing students' critical reading fluency, engagement and self-efficacy using self-referenced learning analytics dashboard visualizations. In *Proceedings of ICCE 2017.* APSCE.
+- Kang, S. H. K., Gollan, T. H., & Pashler, H. (2013). Don't just repeat after me: Retrieval practice is better than imitation for foreign vocabulary learning. *Psychonomic Bulletin & Review, 20*(6), 1259–1265.
+- Karpicke, J. D., & Blunt, J. R. (2011). Retrieval practice produces more learning than elaborative studying with concept mapping. *Science, 331*(6018), 772–775.
+- Kittredge, A. K., Hopman, E. W. M., Reuveni, B., Dionne, D., Freeman, C., & Jiang, X. (2025). Mobile language app learners' self-efficacy increases after using generative AI. *Frontiers in Education.*
+- Mayer, R. E. (2005). Cognitive theory of multimedia learning. In *The Cambridge Handbook of Multimedia Learning* (pp. 31–48). Cambridge University Press.
+- McGaugh, J. L. (2000). Memory—A century of consolidation. *Science, 287*(5451), 248–251.
+- Mihaylova, M., et al. (2022). A meta-analysis on mobile-assisted language learning applications. *PLOS ONE.*
+- Oulasvirta, A., Rattenbury, T., Ma, L., & Raita, E. (2012). Habits make smartphone use more pervasive. *Personal and Ubiquitous Computing, 16*(1), 105–114.
+- Peng, H., Ma, S., & Spector, J. M. (2019). Personalized adaptive learning: An emerging pedagogical approach enabled by a smart learning environment. *Smart Learning Environments, 6*(1), Article 9.
+- Rogers, T. B., Kuiper, N. A., & Kirker, W. S. (1977). Self-reference and the encoding of personal information. *Journal of Personality and Social Psychology, 35*(9), 677–688.
+- Ryan, R. M., & Deci, E. L. (2000). Self-determination theory and the facilitation of intrinsic motivation, social development, and well-being. *American Psychologist, 55*(1), 68–78.
+- Shortt, M., Tilak, S., Kuznetcova, I., Martens, B., & Akinkuolie, B. (2023). Gamification in mobile-assisted language learning: A systematic review of the Duolingo literature from public release of 2012 to early 2020. *Computer Assisted Language Learning, 36*(3), 517–554.
+- Singh, M., et al. (2021). From hello to bye-bye: Churn prediction in English language learning app. In *Proceedings of ICCE 2021.*
+- Slamecka, N. J., & Graf, P. (1978). The generation effect: Delineation of a phenomenon. *Journal of Experimental Psychology: Human Learning and Memory, 4*(6), 592–604.
