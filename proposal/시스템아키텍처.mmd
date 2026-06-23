@@ -1,0 +1,77 @@
+%%{init: {'flowchart': {'curve':'basis','nodeSpacing':45,'rankSpacing':85}}}%%
+flowchart LR
+  subgraph CL["① 클라이언트"]
+    APP["📱 모바일 앱<br/>iOS · Android"]
+  end
+
+  subgraph EDGE["② 전송"]
+    direction TB
+    REST["REST API<br/>입력 이벤트"]
+    SSE["SSE 스트리밍<br/>실시간 토큰"]
+  end
+
+  subgraph ORCH["③ 오케스트레이션 · NestJS (프로바이더 비종속)"]
+    direction TB
+    subgraph ASYNC["비동기 분석 평면 (배치·저비용)"]
+      direction TB
+      PA["학습자 분석기<br/>응답·이력 → 오개념·수준 진단<br/>〔① 진단〕"]
+      RS["복습 스케줄러<br/>SM-2 / FSRS · 결정론"]
+    end
+    SESS["세션·컨텍스트 조립 + 도구 카탈로그<br/>압축 dossier 주입 · function-calling<br/>get/update_persona·log_error·grade_answer"]
+    subgraph RTP["실시간 대화 평면 (세션·스트리밍)"]
+      direction TB
+      ST["소크라틱 튜터 (메인)<br/>채점(temp 0~0.2)+단계적 발문<br/>되묻기 금지 계약 〔② 발문〕"]
+      PG["문제 생성기<br/>맞춤 문제"]
+    end
+  end
+
+  subgraph DATA["데이터 계층"]
+    direction TB
+    DB[("학습 DB · dossier<br/>persona·language_profile<br/>error_log·timeline·세션")]
+    KB[("지식베이스 〔③ RAG〕<br/>구조화 텍스트/JSON·(옵션)벡터")]
+  end
+
+  subgraph ROUTER["④ LLM 라우터 · 단일 진입점"]
+    direction TB
+    FO["failover + 재시도<br/>(429/5xx 백오프)"]
+    DET["결정론 정책(temp)<br/>structured output"]
+    REG["프롬프트 레지스트리<br/>(버전 태그)"]
+    SLOT["모델 슬롯(티어)<br/>강력추론·멀티모달·경량"]
+  end
+
+  subgraph UP["⑤ 업스테이지 (외부)"]
+    direction TB
+    SOLAR["⚙️ Solar LLM<br/>Console API / 온프레미스"]
+    DP["Document Parse"]
+    IE["Information Extract"]
+  end
+
+  subgraph OPS["LLMOps / CI 가드레일"]
+    direction TB
+    CT["계약 테스트(결정론)<br/>형식·정답누설·되묻기<br/>= 블로킹 게이트"]
+    EV["6축 eval · 골든셋<br/>(report-only)"]
+    OB["관측 p95·usage·로그"]
+  end
+
+  APP --> REST --> ASYNC
+  APP <-->|"토큰"| SSE --> ST
+  ASYNC --> SESS
+  RTP --> SESS
+  SESS <-->|"읽기/쓰기"| DB
+  DB -->|"프로파일 주입"| ST
+  KB -->|"RAG 검색"| ST
+  ASYNC ==> ROUTER
+  RTP ==> ROUTER
+  ROUTER ==>|"추론"| SOLAR
+  UP -.->|"DP·IE: 문서 구조화 · 신호 추출"| DATA
+  ROUTER --- OPS
+
+  classDef ana fill:#EBF5FB,stroke:#2E86C1,color:#1b2631;
+  classDef dia fill:#E9F7EF,stroke:#1E8449,color:#1b2631;
+  classDef db fill:#F4ECF7,stroke:#7D3C98,color:#1b2631;
+  classDef sol fill:#FDF2E9,stroke:#CA6F1E,color:#1b2631;
+  classDef ops fill:#FDEDEC,stroke:#CB4335,color:#1b2631;
+  classDef rt fill:#FEF9E7,stroke:#B9770E,color:#1b2631;
+  classDef se fill:#F2F4F4,stroke:#566573,color:#1b2631;
+  class PA,RS ana; class ST,PG dia; class DB,KB db;
+  class SOLAR,DP,IE sol; class CT,EV,OB ops; class FO,DET,REG,SLOT rt; class SESS se;
