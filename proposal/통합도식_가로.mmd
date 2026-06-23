@@ -1,0 +1,36 @@
+flowchart LR
+    APP["📱 학습 앱<br/>라이브 서비스<br/>학습자 입력·대화"]
+    subgraph A["① 분석 평면 — 배치·천천히"]
+        direction TB
+        PA["👤 학습자 분석기<br/>응답·이력 분석<br/>〔① 진단〕"]
+        RS["👤 복습 스케줄러<br/>망각곡선 타이밍"]
+    end
+    DB[("🗄️ 학습 DB<br/>학습자 프로파일<br/>저장·검색·주입 〔③ RAG〕")]
+    subgraph D["② 대화 평면 — 실시간·스트리밍"]
+        direction TB
+        ST["👤 소크라틱 튜터<br/>정답 대신 질문 유도<br/>〔② 발문〕"]
+        PG["👤 문제 생성기<br/>맞춤 문제 제시"]
+    end
+    SOLAR["⚙️ LLM 라우터 → Solar<br/>핵심 추론 엔진<br/>failover · eval"]
+
+    APP -->|"입력·배치"| A
+    APP -->|"대화·실시간(SSE)"| D
+    A -->|"프로파일 저장"| DB
+    DB -->|"프로파일 주입"| D
+    D -.->|"오류·기록"| DB
+    A ==> SOLAR
+    D ==> SOLAR
+    DB -.-> SOLAR
+
+    classDef app fill:#FEF9E7,stroke:#CA6F1E,stroke-width:2px,color:#1b2631;
+    classDef ana fill:#EBF5FB,stroke:#2E86C1,stroke-width:2px,color:#1b2631;
+    classDef dia fill:#E9F7EF,stroke:#1E8449,stroke-width:2px,color:#1b2631;
+    classDef db  fill:#F4ECF7,stroke:#7D3C98,stroke-width:2px,color:#1b2631;
+    classDef sol fill:#FDF2E9,stroke:#CA6F1E,stroke-width:2px,color:#1b2631;
+    class APP app;
+    class PA,RS ana;
+    class ST,PG dia;
+    class DB db;
+    class SOLAR sol;
+    style A fill:#FBFCFD,stroke:#AEB6BF,stroke-dasharray:5 5
+    style D fill:#FBFCFD,stroke:#AEB6BF,stroke-dasharray:5 5
