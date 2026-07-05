@@ -5,3 +5,4 @@ input/photos/*
 !input/photos/.gitkeep
 jobs/
 tmp/
+.claude/settings.local.json
